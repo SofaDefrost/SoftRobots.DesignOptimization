@@ -73,7 +73,7 @@ For selecting and visualizing any design encountered during design optimization 
 
 ## Citing
 If you use the project in your work, please consider citing it with:
-
+```bibtex
 @misc{navarro2023open,
       title={An Open Source Design Optimization Toolbox Evaluated on a Soft Finger}, 
       author={Stefan Escaida Navarro and Tanguy Navez and Olivier Goury and Luis Molina and Christian Duriez},
@@ -82,3 +82,4 @@ If you use the project in your work, please consider citing it with:
       archivePrefix={arXiv},
       primaryClass={cs.RO}
 }
+```
