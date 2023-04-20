@@ -6,7 +6,7 @@ This software toolkit contains components for exploring parametric design of any
 
 We provide a unified framework for implementing a single parametric Sofa scene and use it both for multi-objective design optimization and model-based control. 
 
-Please refer to the dedicated documentation (*in comming*) for installation and more details.
+Please refer to the following documentation for installation and more details.
 
 ## Soft Finger Geometry Parametric Design by Scripting 
 This toolkit is provided with the example of the optimization of a soft finger parametric design.
@@ -74,4 +74,11 @@ For selecting and visualizing any design encountered during design optimization 
 ## Citing
 If you use the project in your work, please consider citing it with:
 
-(In Comming)
+@misc{navarro2023open,
+      title={An Open Source Design Optimization Toolbox Evaluated on a Soft Finger}, 
+      author={Stefan Escaida Navarro and Tanguy Navez and Olivier Goury and Luis Molina and Christian Duriez},
+      year={2023},
+      eprint={2304.07260},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
