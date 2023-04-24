@@ -38,41 +38,54 @@ Please refer to the following [tutorial](https://www.sofa-framework.org/communit
 
 
 
-# Get Started
+# Quick Start
 
-In this section we introduce some commands to use the toolbox with the SensorFinger settings. To use these commands, first open a command prompt in the project directory, then type the command provided bellow.
+## Soft Robot Modeling for Design Optimization
+A soft robot model is described through a set of different scripts:
+* A parametric SOFA scene called after the model name. This scene should also reimplement a Controller class inheriting from BaseFitnessEvaluationController to describe the soft robot's control strategy for evaluating a given parametric design.
+* A Config class inheriting from BaseConfig describing the design variables and optimization objectives.
 
-### How to choose a problem
-The choice of the model and problem to optimise is perform through the arguments "-n *model_name* -rp *id_reduced_problem*". For the same model, several reduced configurations can be implemented considering different designs or objectives. Such a reduced configuration is chosen via the "-rp" argument. For the rest of this tutorial we will work with the reduced configuration 0 of the SensorFinger model.
+## User Interface
+In this section we introduce some commands to use the toolbox with the SensorFinger example. For testing these commands, first open a command prompt in the project directory, then type the command provided bellow. A list of all available commands can be read in the main.py file.
 
-### Simulate the Baseline Design
-
-```python3 main.py -n SensorFinger -sd -ba```
+### Testing a baseline SOFA scene
+For running a parametric scene without optimization, the following command is available:
+```bash
+python3 main.py -n SensorFinger -rp 0 -sd -so ba 
+```
+- -n, --name: name of the soft robot.
+- -rp, --reduced_problem: reference to a reduced configuration of a soft robot. For a same soft robot, several reduced configurations can be implemented considering different design variables or optimization objectives.
+- -sd, --simulate_design: call to the simulation script in the SOFA GUI
+- -so, --simulation_option: simulation option. For baseline simulation, we have to specify the option "ba" [Optional, default=ba]
 
 ### Sensitivity Analysis 
-The following command aims to measure the local impact of each design variable on the optimization objectives.
-
-```python3 main.py -n SensorFinger -rp 0 -sa -nsa 2 -p```
-
-The integer provided to the argument "nsa" is the number of point to sample for each design variables. 
-The argument "p" indicates that we want to plot the results.
+Running a sensitivity analysis for measuring the local impact of each design variable on the optimization objectives is performed through:
+```bash
+python3 main.py -n SensorFinger -rp 0 -sa -nsa 2
+```
+- -sa, --sensitivity_analysis: call to the sensitivity analysis script
+- -nsa, --n_samples_per_param: Number of point to sample for each design variable [Optional, default=2]
 
 ### Design Optimization
-
-```python3 main.py -n SensorFinger -rp 0 -o -ni 100 -p```
-
-The integer provided to the argument "ni" is the number of design optimization iterations.
-The argument "p" indicates that we want to plot the results.
+Design optimization of a parametric design is launched using:
+```bash
+python3 main.py -n SensorFinger -rp 0 -o -ni 100
+```
+- -o, --optimization: call to the design optimization script
+- -ni, --n_iter: Number of design optimization iterations [Optional, default=10]
 
 #### Multithreading Feature
 To start a multithreaded design optimization, simply run the design optimizaiton command in several different terminals. 
 The number of design optimization iterations "ni" provided is then the number of iterations for each process.
 
 ### Simulate a Design obtained through Optimization
-For selecting and visualizing any design encountered during design optimization in SOFA GUI, consider the two following commands: 
-* ```python3 main.py -n SensorFinger -rp 0 -sd -be``` for selecting one of the best designs. A command prompt will ask you which design on the Paretto front you want to visualize. 
+For selecting and visualizing any design encountered during design optimization in the SOFA GUI, consider the following command: 
+```bash
+python3 main.py -n SensorFinger -rp 0 -so -fo
+```
+- -so, --simulation_option: simulation option. For choosing a specific design encountered during design optimization, we have to specify the option "fo" [Optional, default=ba]
 
-* ```python3 main.py -n SensorFinger -rp 0 -sd -fo``` for selecting any design. A command prompt will ask you the design id.
+Once launched, a command prompt will ask you the id of the design to simulate.
 
 
 # Author
