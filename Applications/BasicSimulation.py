@@ -18,7 +18,7 @@ def simulate(config, design_choice = "baseline", id_config = None, solver_librar
     ----------
     config: Config
         Config of the chosen problem
-    design_choice: str among {baseline, from_optim, best}
+    design_choice: str among {ba, fo, be}
         Select design to simulate
     id_config: str
         Id of the config
@@ -37,11 +37,11 @@ def simulate(config, design_choice = "baseline", id_config = None, solver_librar
     scene_lib = importlib.import_module("Models." + config.model_name + "." + config.model_name)
     
     # Load baseline design
-    if design_choice == "baseline":
+    if design_choice == "ba":
         pass
 
     # Reload best design from simulation results
-    elif design_choice == "best" or design_choice == "from_optim":
+    elif design_choice == "be" or design_choice == "fo":
 
         # Init optimization problem
         if id_config != None:
@@ -55,9 +55,9 @@ def simulate(config, design_choice = "baseline", id_config = None, solver_librar
         solver = solver_lib.SolverLibrary(solver_library_name = solver_library_name, solver_name = solver_name)
 
         # Get parameters
-        if design_choice == "best":
+        if design_choice == "be":
             parameters = solver.get_best_results(problem_name, storage_name, config)
-        elif design_choice == "from_optim":
+        elif design_choice == "fo":
             parameters = solver.get_result_from_id(problem_name, storage_name, config)
 
         # Set parameters as design variables
