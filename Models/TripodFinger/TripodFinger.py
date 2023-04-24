@@ -61,7 +61,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
             current_objectives_name = self.config.get_currently_assessed_objectives()   
 
-            self.MotorTorque=self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
+            self.MotorTorque = self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
             contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
             constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
             indices_constraint=[]
@@ -82,23 +82,30 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             self.forceContactN = (forceX**2+forceY**2+forceZ**2)**0.5
             self.forceContactN /= self.rootNode.dt.value
                                     
-            print("Torque="+str(self.MotorTorque))
-                
+            #print("Torque="+str(self.MotorTorque))
+
             for i in range(len(current_objectives_name)):
 
                 current_objective_name =  current_objectives_name[i]
 
                 # Contact Force along X-axis
                 if "ContactForceX" == current_objective_name:
-                    self.forceContactX = self.forceContactX / self.rootNode.dt.value
-                    print("The Contact Force along X:"+str(self.forceContactX))
-                    self.objectives.append(self.forceContactX)
+                    self.contactForceX = self.forceContactX / self.rootNode.dt.value
+                    print("The Contact Force along X: "+str(self.contactForceX))
+                    self.objectives.append(self.contactForceX)
 
                 # Norm of the Contact Force
                 if "ContactForceNorm" == current_objective_name:
                     self.forceContactN = (forceX**2+forceY**2+forceZ**2)**0.5 / self.rootNode.dt.value
-                    print("Norm of the Contact Force:"+str(self.forceContactN))
+                    print("Norm of the Contact Force: "+str(self.forceContactN))
                     self.objectives.append(self.forceContactN)
+
+                # Force Transmission along X-axis
+                # It is the ratio between the necessary Motor Torque and the resulting gripping force along X-axis 
+                if "ForceTransmissionX" == current_objective_name:
+                    self.forceTransmissionX = abs(self.MotorTorque) / abs(self.forceContactX)  
+                    print("Force Transmission along X-axis: "+ str(self.forceTransmissionX))
+                    self.objectives.append(self.forceTransmissionX)
 
                 # Mass of material needed for building the Tripod Finger
                 if "Mass" == current_objective_name:
@@ -110,7 +117,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                                                         w = self.config.w, lc = self.config.lc)
                     mesh = pyvista.read(volumeMeshFileName)
                     self.mass = self.config.rho*mesh.volume
-                    print("Mass of the Finger:", self.mass)
+                    print("Mass of the Finger: ", self.mass)
                     self.objectives.append(self.mass)
 
 

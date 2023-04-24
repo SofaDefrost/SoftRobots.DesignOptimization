@@ -83,7 +83,7 @@ def evaluate_fitness(config, scene_lib):
                 config.set_currently_assessed_objectives(objective_name)
                 all_scores[objective_name] = simulation_loop(config, scene_lib)[0]
     
-
+    
     # Reorder results
     final_scores = []
     for objective_name in config.get_objective_data():
