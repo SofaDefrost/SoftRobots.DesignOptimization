@@ -7,10 +7,19 @@ We provide a unified framework for implementing a single parametric Sofa scene a
 This toolkit is provided with the example of the optimization of a soft finger parametric design.
 This example illustrates how to couple heuristic search and automatic mesh generation for efficiently exploring the soft finger geometry. We also introduce scripts for automatically generating the molds necessary for manufacturing a given design.
 
+
+![Alt text](/images/Intro_Toolbox.png)
+
 More examples will be available in the future.
 
+# Table of Contents
+1. [Installation](#installation)
+2. [Quick Start](#quickstart)
+3. [Examples](#examples)
+      1. [Design Optimization of a Sensorized Finger](#sensorizedfinger)          
 
-# Installation
+
+# Installation <a name="installation"></a>
 
 ## Python requirements
 Python3 is needed to make use of toolbox.
@@ -38,7 +47,7 @@ Please refer to the following [tutorial](https://www.sofa-framework.org/communit
 
 
 
-# Quick Start
+# Quick Start <a name="quickstart"></a>
 
 ## Soft Robot Modeling for Design Optimization
 A soft robot model is described through a set of different scripts:
@@ -46,7 +55,7 @@ A soft robot model is described through a set of different scripts:
 * A Config class inheriting from BaseConfig describing the design variables and optimization objectives.
 
 ## User Interface
-In this section we introduce some commands to use the toolbox with the SensorFinger example. For testing these commands, first open a command prompt in the project directory, then type the command provided bellow. A list of all available commands can be read in the main.py file.
+In this section we introduce the main commands for using the toolbox with the SensorFinger example. For testing these commands, first open a command prompt in the project directory, then type the command provided bellow. A list of all available commands can be read in the main.py file.
 
 ### Testing a baseline SOFA scene
 For running a parametric scene without optimization, the following command is available:
@@ -88,8 +97,13 @@ python3 main.py -n SensorFinger -rp 0 -so -fo
 Once launched, a command prompt will ask you the id of the design to simulate.
 
 
-# Author
-[Team DEFROST (INRIA/CRISTAL), Lille](https://team.inria.fr/defrost/)
+# Examples <a name="examples"></a>
+
+## Design Optimization of a Sensorized Finger <a name="sensorizedfinger"></a> 
+The Sensorized Finger is a cable actuated soft finger with pneumatic chambers located at the joints. This chambers are used as sensors. The measurement of their volume change enables finding the Sensorized Finger actuation state through inverse modeling. The robot parameterization as well as our results are described in this [article](https://arxiv.org/pdf/2304.07260.pdf). We also provide scripts for automatic mold generation for manufacturing any optimized robot.
+
+![Alt text](/images/SensorizedFingerOverview.png)
+
 
 # Citing
 If you use the project in your work, please consider citing it with:
