@@ -12,6 +12,8 @@ import math
 import numpy as np
 import pyvista
 
+import Sofa
+
 # from splib3.objectmodel import SofaPrefab
 # from stlib3.scene import Scene
 # from stlib3.scene.contactheader import ContactHeader
@@ -33,11 +35,11 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         super(FitnessEvaluationController,self).__init__(*args, **kwargs)
         self.actuator = kwargs['actuator']
-        self.ModelNode = self.rootNode.Modelling        
+        self.ModelNode = self.rootNode.Modelling     
         
         # Computation of the contact force applied on the object to grasp
         self.rootNode.getRoot().GenericConstraintSolver.computeConstraintForces.value = True
-        self.angularStep = math.pi / 6
+        self.angularStep = math.pi / 10 # math.pi / 6
         self.angleInit = 0
         
         # Objective evaluation variables
@@ -46,7 +48,50 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         
         self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])
         self.iter_to_angular_disp = self.max_iter - 10
-        
+
+    # A method for dealing with one constraint
+    def _dealConstraint(self, s):
+        if s!='':
+            inter_s = s.split(' ')
+
+            num_constraint = int(inter_s[0])
+            num_points = int(inter_s[1])
+
+            points = []
+            constraint_point = []
+            for i in range(num_points):
+                point = int(inter_s[2+5*i])
+                coord_1 = float(inter_s[3+5*i])
+                coord_2 = float(inter_s[4+5*i])
+                coord_3 = float(inter_s[5+5*i])
+                points.append(point)
+                constraint_point.append([coord_1, coord_2, coord_3])
+
+
+            return {'id': num_constraint, 'nb_point': num_points, 'points': points, 'constraint': constraint_point}
+        else:
+            return {'id': None}
+    
+    # A method for dealing with several constraints
+    def _dealConstraints(self, s, particular_point = None):
+        inter_s = s.split("\n")
+        idx = set()
+        correspondance = {}
+        for constraint in inter_s:
+            cons = self._dealConstraint(constraint)
+            if particular_point is not None and cons['id'] is not None:
+                if particular_point in cons["points"]:
+                    id = cons['id']
+                else:
+                    id = None
+            else:
+                id = cons['id']
+            if id is not None:
+                idx.add(id)
+                correspondance.update({id: cons["points"]})
+        return idx, correspondance
+
+
     def onAnimateBeginEvent(self, dt):
         self.current_iter += 1
 
@@ -56,6 +101,10 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         else:
             self.actuator.ServoMotor.angleIn = self.angleInit + self.angularStep
         
+        # # Test for getting specific constraint values
+        # contact_finger_collis = self.rootNode.Modelling.ActuatedFinger.ElasticBody.ElasticMaterialObject.CollisionMeshOut.getMechanicalState().constraint.value
+        # contact_cylinder_collis = self.ModelNode.Obstacle.Cylinder.collision.getMechanicalState().constraint.value
+
         ### Evaluated forces applied on the cylinder
         if self.current_iter == self.max_iter:
 
@@ -104,6 +153,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 # It is the ratio between the necessary Motor Torque and the resulting gripping force along X-axis 
                 if "ForceTransmissionX" == current_objective_name:
                     self.forceTransmissionX = abs(self.MotorTorque) / abs(self.forceContactX)  
+                    print("Torque="+str(self.MotorTorque))
+                    print("Contact Force along X-axis: " + str(self.forceContactX))
                     print("Force Transmission along X-axis: "+ str(self.forceTransmissionX))
                     self.objectives.append(self.forceTransmissionX)
 
@@ -163,7 +214,7 @@ def createScene(rootNode, config):
     frictionCoef=0.1
     rootNode.addObject('RuleBasedContactManager', responseParams="mu="+str(frictionCoef),
                                                     name='Response', response='FrictionContactConstraint')#frictionCoef=0.1
-    rootNode.addObject('LocalMinDistance',alarmDistance=15e-3, contactDistance=0.1e-3, angleCone=0.01)
+    rootNode.addObject('LocalMinDistance',alarmDistance=25e-3, contactDistance=0.1e-3, angleCone=0.01)
     
     # Set up the pipeline for the collision and mechanics computation
     rootNode.addObject('GenericConstraintSolver', tolerance="1e-6", maxIterations="10000")

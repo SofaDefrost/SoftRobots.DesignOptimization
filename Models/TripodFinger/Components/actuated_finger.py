@@ -127,7 +127,7 @@ class ActuatedFinger(Sofa.Prefab):
                                    surfaceMeshFileName=self.stlMeshFileNameIn2.value,
                                    rotation=[90.0, 0.0, 0.0], translation=[-30.0e-3, 9.0e-3, 18.0e-3])
 
-        CollisionMesh(self.elasticMaterial, name='SelfCollisionMesh3',
+        CollisionMesh(self.elasticMaterial, name='CollisionMeshOut',
                                    surfaceMeshFileName=self.stlMeshFileNameOut.value,
                                    rotation=[90.0, 0.0, 0.0], translation=[-30.0e-3, 9.0e-3, 18.0e-3])
 
