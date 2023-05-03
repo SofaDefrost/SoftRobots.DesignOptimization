@@ -11,6 +11,7 @@ import importlib
 import math
 import numpy as np
 import pyvista
+import copy
 
 import Sofa
 
@@ -36,10 +37,14 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         super(FitnessEvaluationController,self).__init__(*args, **kwargs)
         self.actuator = kwargs['actuator']
         self.ModelNode = self.rootNode.Modelling     
-        
+
+        # Link to collision models between soft finger and object
+        self.contact_finger_collis = self.rootNode.Modelling.ActuatedFinger.ElasticBody.ElasticMaterialObject.CollisionMeshOut.getMechanicalState()
+        self.contact_cylinder_collis = self.ModelNode.Obstacle.Cylinder.collision.getMechanicalState()
+
         # Computation of the contact force applied on the object to grasp
         self.rootNode.getRoot().GenericConstraintSolver.computeConstraintForces.value = True
-        self.angularStep = math.pi / 10 # math.pi / 6
+        self.angularStep = math.pi / 6 # math.pi / 6
         self.angleInit = 0
         
         # Objective evaluation variables
@@ -77,6 +82,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         inter_s = s.split("\n")
         idx = set()
         correspondance = {}
+        points_coord = {}
         for constraint in inter_s:
             cons = self._dealConstraint(constraint)
             if particular_point is not None and cons['id'] is not None:
@@ -89,7 +95,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             if id is not None:
                 idx.add(id)
                 correspondance.update({id: cons["points"]})
-        return idx, correspondance
+                points_coord.update({id: cons["constraint"]})
+        return idx, correspondance, points_coord
 
 
     def onAnimateBeginEvent(self, dt):
@@ -100,10 +107,11 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             self.actuator.ServoMotor.angleIn = self.angleInit + self.angularStep * self.current_iter / self.iter_to_angular_disp
         else:
             self.actuator.ServoMotor.angleIn = self.angleInit + self.angularStep
-        
-        # # Test for getting specific constraint values
-        # contact_finger_collis = self.rootNode.Modelling.ActuatedFinger.ElasticBody.ElasticMaterialObject.CollisionMeshOut.getMechanicalState().constraint.value
-        # contact_cylinder_collis = self.ModelNode.Obstacle.Cylinder.collision.getMechanicalState().constraint.value
+
+        ### Initial coordinates of collision meshes vertices
+        if self.current_iter == 1:
+            self.coords_finger_collis_init = copy.deepcopy(self.contact_finger_collis.position.value)
+            self.coords_object_collis_init = copy.deepcopy(self.contact_cylinder_collis.position.value)
 
         ### Evaluated forces applied on the cylinder
         if self.current_iter == self.max_iter:
@@ -130,8 +138,13 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             
             self.forceContactN = (forceX**2+forceY**2+forceZ**2)**0.5
             self.forceContactN /= self.rootNode.dt.value
-                                    
+
             #print("Torque="+str(self.MotorTorque))
+
+            # Get contact data
+            # idx_finger_collis, links_finger_collis, coords_finger_collis =  self._dealConstraints(self.contact_finger_collis.constraint.value)
+            # idx_object_collis, links_object_collis, coords_object_collis =  self._dealConstraints(self.contact_cylinder_collis.constraint.value)
+            # print("Coords:", coords_object_collis)
 
             for i in range(len(current_objectives_name)):
 
@@ -158,6 +171,31 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print("Force Transmission along X-axis: "+ str(self.forceTransmissionX))
                     self.objectives.append(self.forceTransmissionX)
 
+                # Penalise interpenetration of soft finger with object in the scene at end of 
+                if "InterpenetrationPenaltyInitX" == current_objective_name:
+                    # Penalise interpenetrating objects
+                    self.interpenetrationPenaltyInitX = 0
+                    is_interpenetrating = self.check_interpenetrationX(self.coords_finger_collis_init, self.coords_object_collis_init)
+                    if is_interpenetrating:
+                        self.interpenetrationPenaltyInitX = 1000
+                    print("Interpenetration Init Penalty along X-axis:", self.interpenetrationPenaltyInitX)
+                    self.objectives.append(self.interpenetrationPenaltyInitX)
+
+
+                # Penalise interpenetration of soft finger with object in the scene at end of 
+                if "InterpenetrationPenaltyEndX" == current_objective_name:
+                    # Get contact positions
+                    coords_finger_collis = self.contact_finger_collis.position.value
+                    coords_object_collis = self.contact_cylinder_collis.position.value
+
+                    # Penalise interpenetrating objects
+                    self.interpenetrationPenaltyEndX = 0
+                    is_interpenetrating = self.check_interpenetrationX(coords_finger_collis, coords_object_collis)
+                    if is_interpenetrating:
+                        self.interpenetrationPenaltyEndX = 1000
+                    print("Interpenetration End Penalty along X-axis:", self.interpenetrationPenaltyEndX)
+                    self.objectives.append(self.interpenetrationPenaltyEndX)
+
                 # Mass of material needed for building the Tripod Finger
                 if "Mass" == current_objective_name:
                     volumeMeshFileName = self.config.get_mesh_filename(mode = "Surface", refine = False, 
@@ -170,6 +208,19 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     self.mass = self.config.rho*mesh.volume
                     print("Mass of the Finger: ", self.mass)
                     self.objectives.append(self.mass)
+
+
+    def check_interpenetrationX(self, coords_robot_collis, coords_object_collis):
+        # Get object limit on X-axis
+        object_start_x = min(coords_object_collis, key=lambda c: c[0])[0]
+        
+        # Penalise interpenetrating objects
+        epsilon = 0.001
+        for coord in coords_robot_collis:
+            if coord[0] > object_start_x + epsilon:
+                return True                   
+        return False
+
 
 
 def createScene(rootNode, config):

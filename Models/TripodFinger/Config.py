@@ -66,11 +66,14 @@ class Config(GmshDesignOptimization):
         return {"ContactForceX": ["maximize", 50], 
         "ContactForceNorm": ["maximize", 50],
         "Mass": ["minimize", 0],
-        "ForceTransmissionX": ["minimize", 50]
+        "ForceTransmissionX": ["minimize", 50],
+        "InterpenetrationPenaltyInitX": ["minimize", 1],
+        "InterpenetrationPenaltyEndX": ["minimize", 50]
         }
 
     def get_assessed_together_objectives(self):
-        return [["ContactForceX", "ContactForceNorm", "Mass", "ForceTransmissionX"]]
+        return [["ContactForceX", "ContactForceNorm", "Mass", "ForceTransmissionX", 
+                 "InterpenetrationPenaltyInitX", "InterpenetrationPenaltyEndX"]]
 
     def set_design_variables(self, new_values):
         super(Config,self).set_design_variables(new_values)  
