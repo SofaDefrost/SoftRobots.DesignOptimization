@@ -90,7 +90,7 @@ The number of design optimization iterations "ni" provided is then the number of
 ### Simulate a Design obtained through Optimization
 For selecting and visualizing any design encountered during design optimization in the SOFA GUI, consider the following command: 
 ```bash
-python3 main.py -n SensorFinger -rp 0 -so -fo
+python3 main.py -n SensorFinger -rp 0 -sd -so -fo
 ```
 - -so, --simulation_option: simulation option. For choosing a specific design encountered during design optimization, we have to specify the option "fo" [Optional, default=ba]
 
