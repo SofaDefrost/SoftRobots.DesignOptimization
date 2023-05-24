@@ -128,7 +128,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             current_objectives_name = self.config.get_currently_assessed_objectives()   
 
             self.MotorTorque = self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
-            #print("Torque="+str(self.MotorTorque))
+            # print("Torque="+str(self.MotorTorque))
             contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
             constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
             indices_constraint=[]
@@ -251,7 +251,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     # Normalize by sum of forces
                     # self.contactForceXLocationPenalty = self.contactForceXLocationPenalty / sum_forceX
 
-                    print("Contact Location Penalty weighted with force along x-axis: "
+                    print("Contact Location Penalty along x-axis: "
                         + str(self.contactForceXLocationPenalty))
                     self.objectives.append(self.contactForceXLocationPenalty)
 

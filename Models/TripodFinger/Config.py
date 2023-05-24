@@ -40,6 +40,7 @@ class Config(GmshDesignOptimization):
 
         # Mesh refinement parameter
         self.lc = 12 * self.mm
+        # self.lc = 5 * self.mm
 
         # Printing parameters
         self.rho = 500 # kg/m3
