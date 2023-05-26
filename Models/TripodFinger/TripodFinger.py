@@ -44,7 +44,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         # Computation of the contact force applied on the object to grasp
         self.rootNode.getRoot().GenericConstraintSolver.computeConstraintForces.value = True
-        self.angularStep = math.pi / 6 # math.pi / 6
+        self.angularStep = math.pi / 6 
         self.angleInit = 0
         
         # Objective evaluation variables
@@ -140,12 +140,19 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 indices_constraint.append([int(constraint[i].split(' ')[0]),float(constraint[i].split(' ')[3]),float(constraint[i].split(' ')[4]),float(constraint[i].split(' ')[5])])
                 norm=(indices_constraint[i][1]**2+indices_constraint[i][2]**2+indices_constraint[i][3]**2)**0.5
                 ###### Evaluate the normal force
-                self.forceContactX += 1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
+                self.forceContactX += 1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1] 
                 ####### Evaluate force norm
                 forceX+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
                 forceY+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][2]
-                forceZ+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][3]    
+                forceZ+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][3]
             
+            # In SOFA, force*dt is stored in lambda vectors for ease of use. 
+            # We remove the dt part for obtaining only the force
+            self.forceContactX /= self.rootNode.dt.value
+            forceX /= self.rootNode.dt.value 
+            forceY /= self.rootNode.dt.value
+            forceZ /= self.rootNode.dt.value
+
             # Build dict of constraint data from solver
             constraints_data = {}
             for constraint in indices_constraint:
@@ -181,13 +188,12 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Contact Force along X-axis
                 if "ContactForceX" == current_objective_name:
-                    self.contactForceX = self.forceContactX / self.rootNode.dt.value
-                    print("The Contact Force along X: "+str(self.contactForceX))
-                    self.objectives.append(self.contactForceX)
+                    print("The Contact Force along X: "+str(self.forceContactX))
+                    self.objectives.append(self.forceContactX)
 
                 # Norm of the Contact Force
                 if "ContactForceNorm" == current_objective_name:
-                    self.forceContactN = (forceX**2+forceY**2+forceZ**2)**0.5 / self.rootNode.dt.value
+                    self.forceContactN = (forceX**2+forceY**2+forceZ**2)**0.5 
                     print("Norm of the Contact Force: "+str(self.forceContactN))
                     self.objectives.append(self.forceContactN)
 
@@ -243,8 +249,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     self.contactForceXLocationPenalty = 0
                     sum_forceX = 0
                     for id in idx_collision_finger_object:
-                        norm = (constraints_data[id][0]**2+constraints_data[id][1]**2+constraints_data[id][2]**2)**0.5
-                        curr_forceX = abs(1/norm*contactForces[id]*constraints_data[id][0])
+                        norm = (constraints_data[id][0]**2+constraints_data[id][1]**2+constraints_data[id][2]**2)**0.5 
+                        curr_forceX = abs(1/norm*contactForces[id]*constraints_data[id][0]) / self.rootNode.dt.value
                         self.contactForceXLocationPenalty += (abs(TARGET[2] - collision_coordinates[id][2]) - THRESHOLD) * curr_forceX
                         sum_forceX += curr_forceX
 
