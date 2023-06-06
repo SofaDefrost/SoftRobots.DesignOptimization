@@ -26,7 +26,7 @@ import numpy as np
 class ReducedConfig(Config):
 
     def __init__(self):
-        super(Config,self).__init__("SensorFinger")
+        super().__init__()
         self.lc_finger = 3
         self.PoissonRation = 0.495
 

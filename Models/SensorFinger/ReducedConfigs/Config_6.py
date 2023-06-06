@@ -30,7 +30,7 @@ mode = "SENSOR"
 class ReducedConfig(Config):
 
     def __init__(self):
-        super(Config,self).__init__("SensorFinger")
+        super().__init__()
         if mode == "SENSOR":
             self.BellowHeight =  13
             self.OuterRadius = 17.522
