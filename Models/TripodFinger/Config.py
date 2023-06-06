@@ -22,6 +22,9 @@ class Config(GmshDesignOptimization):
         super(GmshDesignOptimization,self).__init__("TripodFinger")
         
     def init_model_parameters(self):
+        # Specify if we have an object in the scene
+        self.use_object = True
+
         # Conversion to mm
         self.mm = 1e-3
 
@@ -40,7 +43,7 @@ class Config(GmshDesignOptimization):
 
         # Mesh refinement parameter
         self.lc = 12 * self.mm
-        # self.lc = 5 * self.mm
+        self.lc = 5 * self.mm
 
         # Printing parameters
         self.rho = 500 # kg/m3
@@ -79,5 +82,5 @@ class Config(GmshDesignOptimization):
                  "InterpenetrationPenaltyInitX", "InterpenetrationPenaltyEndX", "LocateContactPrecision"]]
 
     def set_design_variables(self, new_values):
-        super(Config,self).set_design_variables(new_values)  
+        super(Config,self).set_design_variables(new_values) 
 

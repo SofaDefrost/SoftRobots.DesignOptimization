@@ -40,7 +40,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         # Link to collision models between soft finger and object
         self.contact_finger_collis = self.rootNode.Modelling.ActuatedFinger.ElasticBody.ElasticMaterialObject.CollisionMeshOut.getMechanicalState()
-        self.contact_cylinder_collis = self.ModelNode.Obstacle.Cylinder.collision.getMechanicalState()
+        if self.config.use_object:
+            self.contact_cylinder_collis = self.ModelNode.Obstacle.Cylinder.collision.getMechanicalState()
 
         # Computation of the contact force applied on the object to grasp
         self.rootNode.getRoot().GenericConstraintSolver.computeConstraintForces.value = True
@@ -120,7 +121,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         ### Initial coordinates of collision meshes vertices
         if self.current_iter == 1:
             self.coords_finger_collis_init = copy.deepcopy(self.contact_finger_collis.position.value)
-            self.coords_object_collis_init = copy.deepcopy(self.contact_cylinder_collis.position.value)
+            if self.config.use_object:
+                self.coords_object_collis_init = copy.deepcopy(self.contact_cylinder_collis.position.value)
 
         ### Evaluated forces applied on the cylinder
         if self.current_iter == self.max_iter:
@@ -128,35 +130,37 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             current_objectives_name = self.config.get_currently_assessed_objectives()   
 
             self.MotorTorque = self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
-            # print("Torque="+str(self.MotorTorque))
-            contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
-            constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
-            indices_constraint=[]
-            self.numContact=len(constraint)
-            self.forceContactX=0
-            forceX,forceY,forceZ=0,0,0
+            print("Torque="+str(self.MotorTorque))
+            if self.config.use_object:
+                contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
+                constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
+                indices_constraint=[]
+                self.numContact=len(constraint)
+                self.forceContactX=0
+                forceX,forceY,forceZ=0,0,0
+                
+                for i in range(len(constraint)):
+                    indices_constraint.append([int(constraint[i].split(' ')[0]),float(constraint[i].split(' ')[3]),float(constraint[i].split(' ')[4]),float(constraint[i].split(' ')[5])])
+                    norm=(indices_constraint[i][1]**2+indices_constraint[i][2]**2+indices_constraint[i][3]**2)**0.5
+                    ###### Evaluate the normal force
+                    self.forceContactX += 1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1] 
+                    ####### Evaluate force norm
+                    forceX+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
+                    forceY+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][2]
+                    forceZ+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][3]
             
-            for i in range(len(constraint)):
-                indices_constraint.append([int(constraint[i].split(' ')[0]),float(constraint[i].split(' ')[3]),float(constraint[i].split(' ')[4]),float(constraint[i].split(' ')[5])])
-                norm=(indices_constraint[i][1]**2+indices_constraint[i][2]**2+indices_constraint[i][3]**2)**0.5
-                ###### Evaluate the normal force
-                self.forceContactX += 1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1] 
-                ####### Evaluate force norm
-                forceX+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
-                forceY+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][2]
-                forceZ+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][3]
-            
-            # In SOFA, force*dt is stored in lambda vectors for ease of use. 
-            # We remove the dt part for obtaining only the force
-            self.forceContactX /= self.rootNode.dt.value
-            forceX /= self.rootNode.dt.value 
-            forceY /= self.rootNode.dt.value
-            forceZ /= self.rootNode.dt.value
+            if self.config.use_object:
+                # In SOFA, force*dt is stored in lambda vectors for ease of use. 
+                # We remove the dt part for obtaining only the force
+                self.forceContactX /= self.rootNode.dt.value
+                forceX /= self.rootNode.dt.value 
+                forceY /= self.rootNode.dt.value
+                forceZ /= self.rootNode.dt.value
 
-            # Build dict of constraint data from solver
-            constraints_data = {}
-            for constraint in indices_constraint:
-                constraints_data[constraint[0]] = constraint[1:]
+                # Build dict of constraint data from solver
+                constraints_data = {}
+                for constraint in indices_constraint:
+                    constraints_data[constraint[0]] = constraint[1:]
            
 
             for i in range(len(current_objectives_name)):
@@ -403,33 +407,34 @@ def createScene(rootNode, config):
 
     
     # Object in the scene
-    rootNode.Modelling.addChild('Obstacle')
+    if config.use_object:
+        rootNode.Modelling.addChild('Obstacle')
 
-    cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[30.0e-3, 0.0, 50.0e-3],
-                        surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/cylinder.stl',
-                        MOscale=10e-3,
-                        uniformScale=0.5,
-                        totalMass=0.032,
-                        isAStaticObject=True)
-    cylObst.mass.showAxisSizeFactor = 1e-2
-    cylObst.mstate.name = 'dofs'
+        cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[30.0e-3, 0.0, 50.0e-3],
+                            surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/cylinder.stl',
+                            MOscale=10e-3,
+                            uniformScale=0.5,
+                            totalMass=0.032,
+                            isAStaticObject=True)
+        cylObst.mass.showAxisSizeFactor = 1e-2
+        cylObst.mstate.name = 'dofs'
 
-    # Fix the object in space
-    fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, cylObst, translation=[30.0e-3, 0.0, 70.0e-3],
-                          scale=[10e-3, 10e-3, 10e-3])
-    rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
+        # Fix the object in space
+        fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, cylObst, translation=[30.0e-3, 0.0, 70.0e-3],
+                            scale=[10e-3, 10e-3, 10e-3])
+        rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
 
-    # Wanted contact location for the object
-    ContactLocation = rootNode.Modelling.Obstacle.addChild('ContactLocation')
-    ContactLocation.addObject('MechanicalObject',
-                       name='dofs',
-                       size=1,
-                       template='Vec3d',
-                       showObject=True,
-                       showObjectScale=2e-3,
-                       drawMode = 1,
-                       showColor = "green",
-                       translation2=[30.0e-3-0.5*10e-3, 0, 70.0e-3])
+        # Wanted contact location for the object
+        ContactLocation = rootNode.Modelling.Obstacle.addChild('ContactLocation')
+        ContactLocation.addObject('MechanicalObject',
+                        name='dofs',
+                        size=1,
+                        template='Vec3d',
+                        showObject=True,
+                        showObjectScale=2e-3,
+                        drawMode = 1,
+                        showColor = "green",
+                        translation2=[30.0e-3-0.5*10e-3, 0, 70.0e-3])
 
     # Add the simulated elements to the Simulation node
     rootNode.Simulation.addChild(actuatedFinger.RigidifiedStructure.DeformableParts)
