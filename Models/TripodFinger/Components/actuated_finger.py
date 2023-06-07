@@ -91,15 +91,14 @@ class ActuatedFinger(Sofa.Prefab):
         # Create an ElasticMaterialObject, which import a mesh, assign it dofs  and mechanical properties
         # All the properties are expressed in SI units. The dimensions in the generated mesh are in meter,
         # the young modulus in Pascal ...
-        # The manufacturer of the Filaflex 70A filament indicates a young modulus of 32MPa. The Poisson ratio is fixed
-        # at 0.45 like standard elastomers (silicone, rubber)
+        # Data from https://www.frontiersin.org/articles/10.3389/frobt.2021.615991/full
         # The rotation and translation are adjusted so that the mesh is correctly positioned wrt the servo motor
         e = body.addChild(ElasticMaterialObject(
             volumeMeshFileName=self.volumeMeshFileName.value,
             topoMesh="tetrahedron",
             scale=[1, 1, 1],
             totalMass=0.015,
-            youngModulus=32e6,
+            youngModulus=7e6,
             poissonRatio=0.45,
             rotation=[90.0, 0.0, 0.0],
             translation=[-30.0e-3, 9.0e-3, 18.0e-3]))
