@@ -1,0 +1,184 @@
+solid Created by Gmsh
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.0312 0
+    vertex 0.008 0.026 0.01033286175820772
+    vertex 0.008 0.02079999999999998 0
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0.03120000000000002 0.02
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+    vertex 0.008 0.0416 0.02
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0.01040000000000001 0.02
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+    vertex 0.008 0.0208 0.02
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.026 0.01033286175820772
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+    vertex 0.008 0.02079999999999998 0
+  endloop
+endfacet
+facet normal 1 0 -0
+  outer loop
+    vertex 0.008 0.0312 0
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+    vertex 0.008 0.026 0.01033286175820772
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0.026 0.01033286175820772
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+    vertex 0.008 0.03120000000000002 0.02
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.0208 0.02
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+    vertex 0.008 0.026 0.01033286175820772
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+    vertex 0.008 0.0447192843827904 0.01240270894960266
+    vertex 0.008 0.0416 0.02
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.02079999999999998 0
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+    vertex 0.008 0.0104 0
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.01040000000000001 0.02
+    vertex 0.008 0.0074521263405871 0.01235092536312224
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0.0208 0.02
+    vertex 0.008 0.026 0.01033286175820772
+    vertex 0.008 0.03120000000000002 0.02
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.04159999999999998 0
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+    vertex 0.008 0.0312 0
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.052 0.02
+    vertex 0.008 0.0447192843827904 0.01240270894960266
+    vertex 0.008 0.052 0.009999999999999972
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0.0416 0.02
+    vertex 0.008 0.0447192843827904 0.01240270894960266
+    vertex 0.008 0.052 0.02
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0 0.01000000000000003
+    vertex 0.008 0.0074521263405871 0.01235092536312224
+    vertex 0.008 0 0.02
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0 0.02
+    vertex 0.008 0.0074521263405871 0.01235092536312224
+    vertex 0.008 0.01040000000000001 0.02
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+    vertex 0.008 0.006152836554805228 0.005980322496171353
+    vertex 0.008 0.0104 0
+  endloop
+endfacet
+facet normal 1 0 -0
+  outer loop
+    vertex 0.008 0.04159999999999998 0
+    vertex 0.008 0.04587116920304698 0.005979892396724494
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.0074521263405871 0.01235092536312224
+    vertex 0.008 0.006152836554805228 0.005980322496171353
+    vertex 0.008 0.01481772954304952 0.009511332110077167
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0.03717890003853849 0.009456537827468865
+    vertex 0.008 0.04587116920304698 0.005979892396724494
+    vertex 0.008 0.0447192843827904 0.01240270894960266
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.052 0
+    vertex 0.008 0.04587116920304698 0.005979892396724494
+    vertex 0.008 0.04159999999999998 0
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.0104 0
+    vertex 0.008 0.006152836554805228 0.005980322496171353
+    vertex 0.008 0 0
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0 0
+    vertex 0.008 0.006152836554805228 0.005980322496171353
+    vertex 0.008 0 0.01000000000000003
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.052 0.009999999999999972
+    vertex 0.008 0.04587116920304698 0.005979892396724494
+    vertex 0.008 0.052 0
+  endloop
+endfacet
+facet normal 1 0 0
+  outer loop
+    vertex 0.008 0.0447192843827904 0.01240270894960266
+    vertex 0.008 0.04587116920304698 0.005979892396724494
+    vertex 0.008 0.052 0.009999999999999972
+  endloop
+endfacet
+facet normal 1 -0 0
+  outer loop
+    vertex 0.008 0 0.01000000000000003
+    vertex 0.008 0.006152836554805228 0.005980322496171353
+    vertex 0.008 0.0074521263405871 0.01235092536312224
+  endloop
+endfacet
+endsolid Created by Gmsh
