@@ -179,7 +179,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Mass of material needed for building the Tripod Finger
                 if "Mass" == current_objective_name:
-                    volumeMeshFileName = self.config.get_mesh_filename(mode = "Surface", refine = False, 
+                    volumeMeshFileName = self.config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = TripodFinger,
                                                         L = self.config.L, l = self.config.l, e1 = self.config.e1, 
                                                         e2 = self.config.e2, e3 = self.config.e3, n = self.config.n, 
@@ -375,29 +375,29 @@ def createScene(rootNode, config):
 
     # Create one actuated finger
     actuatedFinger = actuated_finger_lib.ActuatedFinger(
-        stlMeshFileNameIn1 = config.get_mesh_filename(mode = "Surface", refine = False, 
+        stlMeshFileNameIn1 = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = ContactSurfaceIn1,
                                                         L = config.L, e1 = config.e1, e2 = config.e2, 
                                                         w = config.w, lc = config.lc), 
-        stlMeshFileNameIn2 = config.get_mesh_filename(mode = "Surface", refine = False, 
+        stlMeshFileNameIn2 = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = ContactSurfaceIn2,
                                                         L = config.L, l = config.l, e1 = config.e1, 
                                                         e2 = config.e2, e3 = config.e3, n = config.n, 
                                                         d = [getattr(config, 'd'+ str(i)) for i in range(config.n)], 
                                                         w = config.w, lc = config.lc), 
-        stlMeshFileNameOut = config.get_mesh_filename(mode = "Surface", refine = False, 
+        stlMeshFileNameOut = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = ContactSurfaceOut,
                                                         L = config.L, l = config.l, e1 = config.e1, 
                                                         e2 = config.e2, e3 = config.e3, n = config.n, 
                                                         d = [getattr(config, 'd'+ str(i)) for i in range(config.n)], 
                                                         w = config.w, lc = config.lc),
-        stlMeshFileName = config.get_mesh_filename(mode = "Surface", refine = False, 
+        stlMeshFileName = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = TripodFinger,
                                                         L = config.L, l = config.l, e1 = config.e1, 
                                                         e2 = config.e2, e3 = config.e3, n = config.n, 
                                                         d = [getattr(config, 'd'+ str(i)) for i in range(config.n)], 
                                                         w = config.w, lc = config.lc), 
-        volumeMeshFileName = config.get_mesh_filename(mode = "Volume", refine = False, 
+        volumeMeshFileName = config.get_mesh_filename(mode = "Volume", refine = 0, 
                                                         generating_function = TripodFinger,
                                                         L = config.L, l = config.l, e1 = config.e1, 
                                                         e2 = config.e2, e3 = config.e3, n = config.n, 

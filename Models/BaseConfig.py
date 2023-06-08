@@ -244,8 +244,8 @@ class GmshDesignOptimization(BaseConfig):
         ----------
         mode: string in {Surface, Volume}
             Mesh file mode.
-        refine: boolean
-            Indicate if we shoudl refien the mesh.
+        refine: int
+            Indicate how many time we should refine the mesh
         generating_function: func
             Link to the gmsh generating function.
         
@@ -277,7 +277,7 @@ class GmshDesignOptimization(BaseConfig):
                 gmsh.model.mesh.generate(2)
             elif mode == "Volume":
                 gmsh.model.mesh.generate(3)
-            if refine:
+            for i in range(refine):
                 gmsh.model.mesh.refine()
             gmsh.write(full_filename)
         gmsh.finalize()
