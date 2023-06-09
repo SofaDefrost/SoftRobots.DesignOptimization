@@ -23,16 +23,14 @@ class Config(GmshDesignOptimization):
         
     def init_model_parameters(self):
         ### Resolution mode
-        self.inverse_mode = False
+        self.inverse_mode = True
 
         ### Conversion to mm
         self.mm = 1e-3
 
         ### High level geometry parameters
-        self.Length = 250 * self.mm # Length of the Trunk 
         self.n_modules = 12 # Total number of modules
         self.cabled_modules = 5 # Number of modules where we can move the cable location
-
 
         ### Modules geometry
         self.r_ext = 11 * self.mm # Radius of external circles describing a module
@@ -53,7 +51,7 @@ class Config(GmshDesignOptimization):
 
 
     def get_design_variables(self):   
-        return {"Length": [self.Length, 25.0, 35.0]
+        return {
         }
 
     def get_objective_data(self):

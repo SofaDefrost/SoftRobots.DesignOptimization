@@ -162,24 +162,41 @@ def createScene(rootNode, config):
         cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
                                 pullPoint = pull_points[i],
                                 indices=list(range(0, config.n_modules - 1)),
-                                maxPositiveDisp='70',
+                                # maxPositiveDisp='70',
                                 minForce=0)
         cable.addObject('BarycentricMapping', name='mapping', mapForces=False, mapMasses=False)
 
 
     ### Add effector and goal if we are using an inverse model
     if config.inverse_mode:
+        # Compute Trunk Length
+        trunk_length = 0
+        for k in range(config.n_modules):
+            d_scaling_factor = 1.0 - k * (1.0 - config.min_module_size_percent) / config.n_modules
+            if k == 0:
+                trunk_length += d_scaling_factor * (config.d_ext + config.d_in / 2)
+            else:
+                trunk_length += d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
+            if k != config.n_modules - 1:
+                trunk_length += config.d_mspace
+
+        # Sample effector and goal points for given matchign scenario
+        # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
+        #                                     n_samples = 1) 
+        effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
+                                            n_samples = 10) 
+
+        # Goal
         target = rootNode.addChild('Targets')
-        goal_positions = [[0., 0., 250*config.mm]]
         target.addObject('EulerImplicitSolver', firstOrder=True)
-        target.addObject('CGLinearSolver')
-        target.addObject('MechanicalObject', name='dofs', position=goal_positions, showObject=True, showObjectScale=8, drawMode=2, showColor=[1., 1., 1., 1.])
+        target.addObject('CGLinearSolver', iterations=100, tolerance=1e-5, threshold=1e-5)
+        target.addObject('MechanicalObject', name='dofs', position=goal_positions, showObject=True, showObjectScale=1.0*config.mm, drawMode=2, showColor = "red")
         target.addObject('UncoupledConstraintCorrection')
 
+        # Effectors
         effectors = trunk.addChild('Effectors')
-        effector_positions = [[0., 0., config.Length]]
-        effectors.addObject('MechanicalObject', position = effector_positions)
-        effectors.addObject('PositionEffector', indices=list(range(len(effector_positions))), effectorGoal=target)
+        effectors.addObject('MechanicalObject', position = effector_positions, showObject=True)
+        effectors.addObject('PositionEffector', indices=list(range(len(effector_positions))), effectorGoal="@../../../Targets/dofs.position")
         effectors.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
 
     ##################
@@ -191,3 +208,63 @@ def createScene(rootNode, config):
 
 
 
+def matching_scenario(name_scenario, length, n_samples):
+    """
+    Generate both effector and target points needed for a given matchign scenario.
+    ----------
+    Inputs
+    ----------
+    name_scenario: string 
+        Name of the matching scenario.
+    length: float
+        2D Length of the shape to generate.
+    n_samples: int
+        Number of sample points to generate on the shape.
+    ----------
+    Outputs
+    ----------
+    effector_points: list of list of 3 floats
+        Points on the Trunk, to match with target points.
+    target_points: list of list of 3 floats
+        Target points describing the input shape.
+    """
+
+    if name_scenario == "basic":
+        effector_points = [[0., 0., length]]
+        target_points = [[0., -10.0e-3, length]]
+    elif name_scenario == "S":
+        effector_points = [[0., 0., i*length/(n_samples-1)] for i in range(n_samples)]
+        target_points = generate_shape("S", length, n_samples)
+
+    return effector_points, target_points
+
+
+def generate_shape(name_shape, length, n_samples):
+    """
+    Sample n points describing a given shape with given length.
+    ----------
+    Inputs
+    ----------
+    name_shape: string in {S, ...}
+        Name of the shape to generate.
+    length: float
+        2D Length of the shape to generate.
+    n_samples: int
+        Number of sample points to generate on the shape.
+    ----------
+    Outputs
+    ----------
+    points: list of lsit of 3 floats
+        Sampled points describing the input shape.
+    """
+
+    if name_shape == "S":
+        # S shape
+        t = np.linspace(-np.pi/2, np.pi/2, n_samples)  
+        x = length/2 + (length/2) * np.sin(t) 
+        y = (length/2) * np.sin(2*t) / 2  
+        # Generate 3D points
+        points = [[0., y[i], x[i]] for i in range(n_samples)]
+    
+    
+    return points
