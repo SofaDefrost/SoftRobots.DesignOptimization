@@ -29,7 +29,7 @@ class Config(GmshDesignOptimization):
         self.mm = 1e-3
 
         ### High level geometry parameters
-        self.n_modules = 12 # Total number of modules
+        self.n_modules = 15 # Total number of modules
         self.cabled_modules = 5 # Number of modules where we can move the cable location
 
         ### Modules geometry

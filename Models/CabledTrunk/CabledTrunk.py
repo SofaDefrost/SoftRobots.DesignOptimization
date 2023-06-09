@@ -155,7 +155,6 @@ def createScene(rootNode, config):
                              (r_scaling_factors * config.r_in - config.dist_to_r_in) * math.sin(i * angle), 
                              dist_Z])
         
-        print("positions:", positions)
         # Init cable
         cable = cables.addChild('cable_'+str(i))
         cable.addObject('MechanicalObject', name='dofs', position=positions)
@@ -183,8 +182,10 @@ def createScene(rootNode, config):
         # Sample effector and goal points for given matchign scenario
         # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
         #                                     n_samples = 1) 
-        effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
-                                            n_samples = 10) 
+        # effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
+        #                                     n_samples = 20) 
+        effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
+                                            n_samples = 20) 
 
         # Goal
         target = rootNode.addChild('Targets')
@@ -235,6 +236,9 @@ def matching_scenario(name_scenario, length, n_samples):
     elif name_scenario == "S":
         effector_points = [[0., 0., i*length/(n_samples-1)] for i in range(n_samples)]
         target_points = generate_shape("S", length, n_samples)
+    elif name_scenario == "L":
+        effector_points = [[0., 0., i*length/(n_samples-1)] for i in range(n_samples)]
+        target_points = generate_shape("L", length, n_samples)
 
     return effector_points, target_points
 
@@ -261,10 +265,17 @@ def generate_shape(name_shape, length, n_samples):
     if name_shape == "S":
         # S shape
         t = np.linspace(-np.pi/2, np.pi/2, n_samples)  
-        x = length/2 + (length/2) * np.sin(t) 
         y = (length/2) * np.sin(2*t) / 2  
+        z = length/2 + (length/2) * np.sin(t) 
         # Generate 3D points
-        points = [[0., y[i], x[i]] for i in range(n_samples)]
+        points = [[0., y[i], z[i]] for i in range(n_samples)]
     
+    elif name_shape == "L":
+        points = []
+        step = length / n_samples
+        for i in range(2 * n_samples // 3):
+            points.append([0., 0., i*step])
+        for i in range(0, n_samples // 3):
+            points.append([0., i*step, (2 * n_samples // 3) * step])
     
     return points
