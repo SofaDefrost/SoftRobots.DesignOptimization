@@ -62,16 +62,18 @@ def Trunk(n_modules, r_ext, d_ext, r_in, d_in, min_radius_percent, min_module_si
     module_volumes = []
     link_volumes = []
     last_loop_ext_2 = None
+    dist_Z = 0
     for i in range(n_modules):
         # Generate module volume
         r_scaling_factors = 1.0 - i * (1.0 - min_radius_percent) / n_modules
         d_scaling_factor = 1.0 - i * (1.0 - min_module_size_percent) / n_modules
         module_length = d_scaling_factor * (d_ext + d_in + d_ext)
-        translation = np.array([0, 0, i * (module_length + d_mspace)])
+        translation = np.array([0, 0, dist_Z])
         module_volume, curr_loop_ext_1, curr_loop_ext_2  = generate_module(r_scaling_factors * r_ext, d_scaling_factor * d_ext, 
                                                                            r_scaling_factors * r_in, d_scaling_factor * d_in, 
                                                                            translation)
         module_volumes.append(module_volume)
+        dist_Z += module_length + d_mspace
 
         # Generate link to previous module
         if last_loop_ext_2 is not None:
@@ -88,8 +90,13 @@ def Trunk(n_modules, r_ext, d_ext, r_in, d_in, min_radius_percent, min_module_si
         trunk_volume = gmsh.model.occ.fragment(trunk_volume, link_volumes[i-1])[0]
         # Union with next module
         trunk_volume = gmsh.model.occ.fragment(trunk_volume, module_volumes[i])[0]
-
     gmsh.model.occ.synchronize()
+
+    # Homogeneize mesh
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.001)  # Minimum mesh size
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 0.01)  # Maximum mesh size
+    gmsh.option.setNumber("Mesh.CharacteristicLengthFactor", 0.8) # Mesh size factor
+    
 
     # gmsh.fltk.run()  
     return trunk_volume

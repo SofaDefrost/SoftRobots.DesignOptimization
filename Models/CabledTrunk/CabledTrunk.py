@@ -25,8 +25,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         print('>>> Start Init SOFA scene ...')
 
         super(FitnessEvaluationController,self).__init__(*args, **kwargs)
-        self.actuator = kwargs['actuator']
-        self.ModelNode = self.rootNode.Modelling     
+        self.actuator = kwargs['actuator'] 
 
         # Objective evaluation variables
         self.current_iter = 0
@@ -53,10 +52,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
 def createScene(rootNode, config):
 
-    # Define the main architecture of the scene, with a node Modelling, Setting and Simulation
-    rootNode.addChild('Modelling')
-    rootNode.addChild('Settings')
-    rootNode.addChild('Simulation')    
+    # Define the main architecture of the scene   
     rootNode.addObject('RequiredPlugin', pluginName= [
         'Sofa.Component.LinearSolver.Direct',
         'Sofa.Component.ODESolver.Backward',
@@ -74,6 +70,7 @@ def createScene(rootNode, config):
         'Sofa.Component.Constraint.Lagrangian.Correction',
         'Sofa.Component.Constraint.Projective',
         'ArticulatedSystemPlugin'])
+    rootNode.addObject("RequiredPlugin", name="SoftRobots")
     if config.inverse_mode:
         rootNode.addObject('RequiredPlugin', name='SoftRobots.Inverse')
     
@@ -81,12 +78,13 @@ def createScene(rootNode, config):
     rootNode.dt = 0.01
 
     # Define the default view of the scene on SOFA
+    rootNode.addChild('Settings')
     rootNode.Settings.addObject('OglSceneFrame')
     rootNode.addObject('DefaultVisualManagerLoop')
-    rootNode.addObject('VisualStyle', displayFlags='hideInteractionForceFields showForceFields showCollisionModels')
+    rootNode.addObject('VisualStyle', displayFlags='hideInteractionForceFields showForceFields showCollisionModels showBehavior')
 
     # Weight
-    rootNode.gravity = [0., -9.81, 0.]
+    rootNode.gravity = [0, -9.810, 0.]
 
     # General solver
     rootNode.addObject('FreeMotionAnimationLoop')
@@ -114,8 +112,6 @@ def createScene(rootNode, config):
     trunk.addObject('UniformMass', totalMass=0.1)
     trunk.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=0.45,  youngModulus=450000)
 
-    # Add cables
-    # TODO
 
     # Add visual model 
     # trunk_visu = trunk.addChild('VisualModel')
@@ -131,11 +127,47 @@ def createScene(rootNode, config):
     # Add collision model
     # ??
 
-    # Fix extremity of the Trunk
-    trunk.addObject('BoxROI', name='boxROI', box=[[-20, -20, 0], [20, 20, 20]], drawBoxes=False)
-    trunk.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
+    # Fix base of the Trunk
+    trunk.addObject('BoxROI', name='boxROI', box=[[-20*config.mm, -20*config.mm, -config.d_ext-(config.d_in/2)], [20*config.mm, 20*config.mm, 0]], drawBoxes=True)
+    #trunk.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
+    trunk.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e10) 
 
-    # Add effector and goal if we are using an inverse model
+
+    ### Add cables
+    cables = trunk.addChild('cables')
+
+    # Compute pull points location
+    pull_points = []
+    angle = 2 * math.pi / config.n_cables # Angle between two points on the circle
+    for i in range(config.n_cables):
+        pull_points.append([(config.r_in - config.dist_to_r_in) * math.cos(i * angle), (config.r_in - config.dist_to_r_in) * math.sin(i * angle), 0.])    
+
+    # Create cables
+    for i in range(config.n_cables):
+        # Compute attachment points location
+        positions = []
+        dist_Z = 0
+        for k in range(1, config.n_modules):
+            r_scaling_factors = 1.0 - k * (1.0 - config.min_radius_percent) / config.n_modules
+            d_scaling_factor = 1.0 - k * (1.0 - config.min_module_size_percent) / config.n_modules
+            dist_Z += config.d_mspace + d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
+            positions.append([(r_scaling_factors * config.r_in - config.dist_to_r_in) * math.cos(i * angle), 
+                             (r_scaling_factors * config.r_in - config.dist_to_r_in) * math.sin(i * angle), 
+                             dist_Z])
+        
+        print("positions:", positions)
+        # Init cable
+        cable = cables.addChild('cable_'+str(i))
+        cable.addObject('MechanicalObject', name='dofs', position=positions)
+        cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
+                                pullPoint = pull_points[i],
+                                indices=list(range(0, config.n_modules - 1)),
+                                maxPositiveDisp='70',
+                                minForce=0)
+        cable.addObject('BarycentricMapping', name='mapping', mapForces=False, mapMasses=False)
+
+
+    ### Add effector and goal if we are using an inverse model
     if config.inverse_mode:
         target = rootNode.addChild('Targets')
         goal_positions = [[0., 0., 250*config.mm]]
