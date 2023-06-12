@@ -129,8 +129,16 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
             current_objectives_name = self.config.get_currently_assessed_objectives()   
 
-            self.MotorTorque = self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
+            # self.MotorTorqueOld = self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
+            # print("Old Torque="+str(self.MotorTorqueOld))
+
+            # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
+            k = self.actuator.ServoMotor.Articulation.RestShapeSpringsForceField.stiffness.value
+            theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value
+            theta = self.actuator.ServoMotor.Articulation.dofs.position.value
+            self.MotorTorque = k * (theta - theta_0)
             print("Torque="+str(self.MotorTorque))
+
             if self.config.use_object:
                 contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
                 constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
