@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Reduced config for the Tripod Finger.
-This is a scene without object for calibration purpose.
+This is a scene with object for calibration purpose.
 """
 
 __authors__ = "tnavez"
@@ -23,7 +23,6 @@ class ReducedConfig(Config):
 
     def __init__(self):
         super().__init__()
-        self.use_object = False
 
     def get_objective_data(self):
         t = 50

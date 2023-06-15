@@ -45,15 +45,48 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         # Computation of the contact force applied on the object to grasp
         self.rootNode.getRoot().GenericConstraintSolver.computeConstraintForces.value = True
-        self.angularStep = math.pi / 6 
+        self.max_angle = math.pi / 6 
         self.angleInit = 0
         
         # Objective evaluation variables
         self.current_iter = 0
         current_objectives = self.config.get_currently_assessed_objectives()
-        
         self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])
-        self.iter_to_angular_disp = self.max_iter - 10
+
+        # Time and intermediate angle intervals
+        self.iter_eval = self.max_iter - 5
+        self.n_target_angles = 5
+        self.break_iter_per_step = 3 # Number of iter for reaching equilibrium between each intemediate target angle, for avoiding dynamical effect      
+        self.init_angle_targets()
+
+        # Calibration lists
+        self.int_interval_torques = []
+
+    def init_angle_targets(self):
+        """"
+        This method create a list with all target angles to reach.
+        """
+        # Set the maximum number of iterations to be a multiple of the number of intermediate targets
+        self.iter_eval = self.iter_eval - self.iter_eval % self.n_target_angles
+
+        # Compute angular steps
+        angle_step = self.max_angle / (self.iter_eval - self.n_target_angles * self.break_iter_per_step) # We do not count the break iter
+
+        # Compute the list of angles to reach
+        self.angles_per_dt = []
+        self.target_angles = []
+        self.final_break_dt = []
+        prev_angle = self.angleInit
+        increments_per_target = int(self.iter_eval / self.n_target_angles - self.break_iter_per_step)
+        for t in range(self.n_target_angles):
+            # Add intermediate angles to reach target
+            self.angles_per_dt += [prev_angle + (a+1) * angle_step 
+                                   for a in range(increments_per_target)]
+            prev_angle = self.angles_per_dt[-1]
+            self.target_angles.append(prev_angle)
+            # Add breaks
+            self.angles_per_dt += [prev_angle for a in range(self.break_iter_per_step)]
+            self.final_break_dt.append((t+1) * (increments_per_target + self.break_iter_per_step) - 1)
 
     # A method for dealing with one constraint
     def _dealConstraint(self, s):
@@ -110,34 +143,34 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
 
     def onAnimateBeginEvent(self, dt):
-        self.current_iter += 1
-
-        # Incremental update of servomotor angular position
-        if self.current_iter < self.iter_to_angular_disp:
-            self.actuator.ServoMotor.angleIn = self.angleInit + self.angularStep * self.current_iter / self.iter_to_angular_disp
+        
+        ### Incremental update of servomotor angular position
+        if self.current_iter < self.iter_eval:
+            self.actuator.ServoMotor.angleIn = self.angles_per_dt[self.current_iter]
         else:
-            self.actuator.ServoMotor.angleIn = self.angleInit + self.angularStep
+            self.actuator.ServoMotor.angleIn = self.angleInit + self.max_angle
 
         ### Initial coordinates of collision meshes vertices
-        if self.current_iter == 1:
+        if self.current_iter == 0:
             self.coords_finger_collis_init = copy.deepcopy(self.contact_finger_collis.position.value)
             if self.config.use_object:
                 self.coords_object_collis_init = copy.deepcopy(self.contact_cylinder_collis.position.value)
+
+        ### Register current torque for calibration purpose
+        if len(self.final_break_dt) != 0:
+            if self.current_iter == self.final_break_dt[0]:
+                self.final_break_dt.pop(0)
+                self.int_interval_torques.append(self.evaluate_torque().tolist()[0])
+
+        self.current_iter += 1
 
         ### Evaluated forces applied on the cylinder
         if self.current_iter == self.max_iter:
 
             current_objectives_name = self.config.get_currently_assessed_objectives()   
 
-            # self.MotorTorqueOld = self.actuator.ServoMotor.ServoBody.dofs.force.value[0][4]
-            # print("Old Torque="+str(self.MotorTorqueOld))
-
             # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
-            k = self.actuator.ServoMotor.Articulation.RestShapeSpringsForceField.stiffness.value
-            theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value
-            theta = self.actuator.ServoMotor.Articulation.dofs.position.value
-            self.MotorTorque = k * (theta - theta_0)
-            print("Torque="+str(self.MotorTorque))
+            self.MotorTorque = self.evaluate_torque()
 
             if self.config.use_object:
                 contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
@@ -170,7 +203,6 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 for constraint in indices_constraint:
                     constraints_data[constraint[0]] = constraint[1:]
            
-
             for i in range(len(current_objectives_name)):
 
                 current_objective_name =  current_objectives_name[i]
@@ -273,14 +305,27 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                         + str(self.contactForceXLocationPenalty))
                     self.objectives.append(self.contactForceXLocationPenalty)
 
-                # print("idx_finger_collis:", idx_constraint_finger_collis)
-                # print("idx_object_collis:", idx_constraint_object_collis)
-                # print("links_finger_collis:", links_finger_collis)
-                # print("links_object_collis:", links_object_collis)
-                # print("coord_finger_collis:", coord_finger_collis)
-                # print("coord_object_collis:", coord_object_collis)
+                # Calibration metric
+                if "TorqueCalibration" == current_objective_name:
+                    # List of measured torque on the physical prototype
+                    print("Torques measured in simulation", self.int_interval_torques)
+                    if self.config.use_object:
+                        ground_truth_torques = [-0.04, -0.07, -0.42, -0.85, -1.05]
+                    else: 
+                        ground_truth_torques = [-0.04, -0.07, -0.10, -0.15, -0.18]
+                    self.TorqueCalibrationMetric = np.linalg.norm(np.array(ground_truth_torques) - 
+                                                                  np.array(self.int_interval_torques))
+                    print("Torque calibration metric:" + str(self.TorqueCalibrationMetric))
+                    self.objectives.append(self.TorqueCalibrationMetric)
+                    
 
-
+    def evaluate_torque(self):
+        # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
+        k = self.actuator.ServoMotor.Articulation.RestShapeSpringsForceField.stiffness.value
+        theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value
+        theta = self.actuator.ServoMotor.Articulation.dofs.position.value
+        return k * (theta - theta_0)
+    
     def check_interpenetrationX(self, coords_0, coords_1):
         """
         Check in 2D if two meshes are interpenetrating along x-axis.
