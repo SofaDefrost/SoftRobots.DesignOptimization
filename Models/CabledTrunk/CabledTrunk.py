@@ -46,7 +46,9 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 current_objective_name =  current_objectives_name[i]
 
                 if "ShapeMatching" == current_objective_name:
-                    self.objectives.append(0)
+                    self.ShapeMatchingMetric = self.rootNode.QPInverseProblemSolver.objective.value
+                    print("Matching metric:", self.ShapeMatchingMetric)
+                    self.objectives.append(self.ShapeMatchingMetric)
 
 
 
@@ -101,7 +103,7 @@ def createScene(rootNode, config):
 
     # Create the Trunk body
     trunk = simulation.addChild("Trunk")
-    trunk.addObject('MeshVTKLoader', name='loader', filename = config.get_mesh_filename(mode = "Volume", refine = 1, 
+    trunk.addObject('MeshVTKLoader', name='loader', filename = config.get_mesh_filename(mode = "Volume", refine = 0, 
                                                         generating_function = Trunk, 
                                                         n_modules = config.n_modules,
                                                         r_ext = config.r_ext, d_ext = config.d_ext, r_in = config.r_in, d_in = config.d_in,
@@ -138,28 +140,29 @@ def createScene(rootNode, config):
 
     # Compute pull points location
     pull_points = []
-    angle = 2 * math.pi / config.n_cables # Angle between two points on the circle
-    for i in range(config.n_cables):
-        pull_points.append([(config.r_in - config.dist_to_r_in) * math.cos(i * angle), (config.r_in - config.dist_to_r_in) * math.sin(i * angle), 0.])    
-
+    for c in range(config.n_cables):
+        angle = getattr(config, "theta_" + str(c) + "_0")
+        pull_points.append([(config.r_in - config.dist_to_r_in) * math.cos(angle), (config.r_in - config.dist_to_r_in) * math.sin(angle), 0.])    
+    
     # Create cables
-    for i in range(config.n_cables):
+    for c in range(config.n_cables):
         # Compute attachment points location
         positions = []
         dist_Z = 0
-        for k in range(1, config.n_modules):
-            r_scaling_factors = 1.0 - k * (1.0 - config.min_radius_percent) / config.n_modules
-            d_scaling_factor = 1.0 - k * (1.0 - config.min_module_size_percent) / config.n_modules
+        for m in range(1, config.n_modules):
+            angle = getattr(config, "theta_" + str(c) + "_" + str(m))
+            r_scaling_factors = 1.0 - m * (1.0 - config.min_radius_percent) / config.n_modules
+            d_scaling_factor = 1.0 - m * (1.0 - config.min_module_size_percent) / config.n_modules
             dist_Z += config.d_mspace + d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
-            positions.append([(r_scaling_factors * config.r_in - config.dist_to_r_in) * math.cos(i * angle), 
-                             (r_scaling_factors * config.r_in - config.dist_to_r_in) * math.sin(i * angle), 
+            positions.append([(r_scaling_factors * config.r_in - config.dist_to_r_in) * math.cos(angle), 
+                             (r_scaling_factors * config.r_in - config.dist_to_r_in) * math.sin(angle), 
                              dist_Z])
         
         # Init cable
-        cable = cables.addChild('cable_'+str(i))
+        cable = cables.addChild('cable_'+str(c))
         cable.addObject('MechanicalObject', name='dofs', position=positions)
         cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
-                                pullPoint = pull_points[i],
+                                pullPoint = pull_points[c],
                                 indices=list(range(0, config.n_modules - 1)),
                                 # maxPositiveDisp='70',
                                 minForce=0)
@@ -182,10 +185,10 @@ def createScene(rootNode, config):
         # Sample effector and goal points for given matchign scenario
         # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
         #                                     n_samples = 1) 
-        # effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
-        #                                     n_samples = 20) 
-        effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
-                                            n_samples = 20) 
+        effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
+                                             n_samples = 20) 
+        #effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
+        #                                    n_samples = 20) 
 
         # Goal
         target = rootNode.addChild('Targets')

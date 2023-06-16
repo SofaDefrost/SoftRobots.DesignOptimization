@@ -30,8 +30,9 @@ class Config(GmshDesignOptimization):
 
         ### High level geometry parameters
         self.n_modules = 15 # Total number of modules
-        self.cabled_modules = 5 # Number of modules where we can move the cable location
-
+        self.var_cabled_modules = 15 # Number of modules where we can move the cable location
+                                    # This value should be self.n_modules for considering cable location variable everywhere
+        
         ### Modules geometry
         self.r_ext = 11 * self.mm # Radius of external circles describing a module
         self.d_ext = 4 * self.mm # Distance between internal and external circles of a module
@@ -46,16 +47,29 @@ class Config(GmshDesignOptimization):
         self.d_mspace = 3 * self.mm # Distance between two modules
 
         ### Cables
+        # High level params
         self.n_cables = 4
         self.dist_to_r_in = 1.0 * self.mm # Distance between cable attachment and internal radius
 
+        # Attachment angles on each module for each cable
+        angle = 2 * np.pi / self.n_cables # Angle between two points on the middle circle of a module
+        for c in range(self.n_cables):
+            for m in range(self.n_modules):
+                exec("self.theta_" + str(c) + "_" + str(m) + " = " + str(c * angle))
+            
 
     def get_design_variables(self):   
-        return {
-        }
+        # Build design variables dictionnary
+        design_variables = {}
+
+        ### Add angle variables
+        for c in range(self.n_cables):
+            for m in range(1, self.n_modules):
+                design_variables["theta_" + str(c) + "_" + str(m)] = [exec("self.theta_" + str(c) + "_" + str(m)), 0, 2*np.pi]
+        return design_variables
 
     def get_objective_data(self):
-        t = 50
+        t = 25 
         return {"ShapeMatching": ["minimize", t]
         }
 
@@ -65,3 +79,5 @@ class Config(GmshDesignOptimization):
     def set_design_variables(self, new_values):
         super(Config,self).set_design_variables(new_values) 
 
+    
+        
