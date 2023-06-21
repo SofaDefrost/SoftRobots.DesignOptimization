@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for the Tripod Finger.
-We optimise both for:
-    - A maximum contact Force along x-axis.
-    - A minimum material mass needed to manufacture the finger.
+"""Reduced config for the Cabled Trunk
+We optimise cable locations on less segments.
 """
 
 __authors__ = "tnavez"
 __contact__ = "tanguy.navez@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020, Inria"
-__date__ = "Feb 09 2023"
+__date__ = "Jun 16 2023"
 
 
 import sys
@@ -23,12 +21,17 @@ import numpy as np
 
 class ReducedConfig(Config):
 
+    def __init__(self):
+        super().__init__()
+        self.var_cabled_modules = 3
+
     def get_objective_data(self):
-        return {"ContactForceX": ["maximize", 50],
-        "Mass": ["minimize", 0]}
+        t = 40
+        return {"ShapeMatchingBigS": ["minimize", t]
+        }
 
     def get_assessed_together_objectives(self):
-        return [["ContactForceX", "Mass"]]
+        return [["ShapeMatchingBigS"]]
     
 
 

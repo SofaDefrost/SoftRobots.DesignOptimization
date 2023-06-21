@@ -45,7 +45,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 current_objective_name =  current_objectives_name[i]
 
-                if "ShapeMatching" == current_objective_name:
+                if "ShapeMatchingBigS" == current_objective_name:
                     self.ShapeMatchingMetric = self.rootNode.QPInverseProblemSolver.objective.value
                     print("Matching metric:", self.ShapeMatchingMetric)
                     self.objectives.append(self.ShapeMatchingMetric)
@@ -134,25 +134,30 @@ def createScene(rootNode, config):
     #trunk.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
     trunk.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e10) 
 
-
-    ### Add cables
+    ##################
+    ### Add cables ###
+    ##################
     cables = trunk.addChild('cables')
 
-    # Compute pull points location
+    ### Compute pull points locations
     pull_points = []
-    for c in range(config.n_cables):
+    for c in range(config.n_cables + config.n_short_cables):
         angle = getattr(config, "theta_" + str(c) + "_0")
         pull_points.append([(config.r_in - config.dist_to_r_in) * math.cos(angle), (config.r_in - config.dist_to_r_in) * math.sin(angle), 0.])    
-    
+
     # Create cables
-    for c in range(config.n_cables):
+    for c in range(config.n_cables + config.n_short_cables):
         # Compute attachment points location
         positions = []
         dist_Z = 0
-        for m in range(1, config.n_modules):
+        if c < config.n_cables:
+            n_modules = config.n_modules
+        else:
+            n_modules = config.end_each_short_cable[c - config.n_cables]
+        for m in range(1, n_modules):
             angle = getattr(config, "theta_" + str(c) + "_" + str(m))
-            r_scaling_factors = 1.0 - m * (1.0 - config.min_radius_percent) / config.n_modules
-            d_scaling_factor = 1.0 - m * (1.0 - config.min_module_size_percent) / config.n_modules
+            r_scaling_factors = 1.0 - m * (1.0 - config.min_radius_percent) / n_modules
+            d_scaling_factor = 1.0 - m * (1.0 - config.min_module_size_percent) / n_modules
             dist_Z += config.d_mspace + d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
             positions.append([(r_scaling_factors * config.r_in - config.dist_to_r_in) * math.cos(angle), 
                              (r_scaling_factors * config.r_in - config.dist_to_r_in) * math.sin(angle), 
@@ -163,7 +168,7 @@ def createScene(rootNode, config):
         cable.addObject('MechanicalObject', name='dofs', position=positions)
         cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
                                 pullPoint = pull_points[c],
-                                indices=list(range(0, config.n_modules - 1)),
+                                indices=list(range(0, n_modules - 1)),
                                 # maxPositiveDisp='70',
                                 minForce=0)
         cable.addObject('BarycentricMapping', name='mapping', mapForces=False, mapMasses=False)
@@ -183,10 +188,12 @@ def createScene(rootNode, config):
                 trunk_length += config.d_mspace
 
         # Sample effector and goal points for given matchign scenario
+        current_objectives_name = config.get_currently_assessed_objectives()   
+        if "ShapeMatchingBigS" in current_objectives_name:
+            effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
+                                                n_samples = 20) 
         # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
         #                                     n_samples = 1) 
-        effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
-                                             n_samples = 20) 
         #effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
         #                                    n_samples = 20) 
 
