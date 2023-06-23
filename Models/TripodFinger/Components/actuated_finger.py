@@ -22,6 +22,10 @@ class ActuatedFinger(Sofa.Prefab):
         {"name": "rotation", "type": "Vec3d", "help": "Rotation in base frame", "default": [0.0, 0.0, 0.0]},
         {"name": "translation", "type": "Vec3d", "help": "Translation in base frame",
          "default": [0.0, 0.0, 0.0]},
+         {"name": "youngModulus", "type": "double", "help": "Young modulus for simulating the finger",
+         "default": 7e6},
+         {"name": "poissonRatio", "type": "double", "help": "Poisson ratio for simulating the finger",
+         "default": 0.45},
          {"name": "volumeMeshFileName", "type": "string", "help": "Path to the mesh used for computing volumetric mesh", 
         "default": "Models/TripodFinger/Meshes/finger.msh"},
         {"name": "stlMeshFileName", "type": "string", "help": "Path to the surface mesh", 
@@ -98,8 +102,8 @@ class ActuatedFinger(Sofa.Prefab):
             topoMesh="tetrahedron",
             scale=[1, 1, 1],
             totalMass=0.015,
-            youngModulus=7e6,
-            poissonRatio=0.45,
+            youngModulus=self.youngModulus.value,
+            poissonRatio=self.poissonRatio.value,
             rotation=[90.0, 0.0, 0.0],
             translation=[-30.0e-3, 9.0e-3, 18.0e-3]))
         

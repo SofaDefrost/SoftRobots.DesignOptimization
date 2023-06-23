@@ -48,6 +48,10 @@ class Config(GmshDesignOptimization):
         # Printing parameters
         self.rho = 500 # kg/m3
 
+        # Simulation parameters
+        self.young_modulus = 7e6
+        self.poisson_ratio = 0.45
+
     def get_design_variables(self):   
         # Maximum bound variables
         self.e1max = 15 * self.mm

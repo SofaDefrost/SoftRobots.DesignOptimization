@@ -24,6 +24,11 @@ class ReducedConfig(Config):
     def __init__(self):
         super().__init__()
 
+    def get_design_variables(self):   
+        return {"YoungModulus": [self.young_modulus, 5e5, 1e7], 
+        "PoissonRatio": [self.poisson_ratio, 0.4, 0.49]
+        }
+
     def get_objective_data(self):
         t = 50
         return {"TorqueCalibration": ["minimize", 50]}

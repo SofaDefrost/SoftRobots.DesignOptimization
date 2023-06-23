@@ -428,6 +428,8 @@ def createScene(rootNode, config):
 
     # Create one actuated finger
     actuatedFinger = actuated_finger_lib.ActuatedFinger(
+        youngModulus = config.young_modulus,
+        poissonRatio = config.poisson_ratio,
         stlMeshFileNameIn1 = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = ContactSurfaceIn1,
                                                         L = config.L, e1 = config.e1, e2 = config.e2, 
