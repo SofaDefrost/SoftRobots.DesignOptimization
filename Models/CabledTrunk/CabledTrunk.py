@@ -86,7 +86,8 @@ def createScene(rootNode, config):
     rootNode.addObject('VisualStyle', displayFlags='hideInteractionForceFields showForceFields showCollisionModels showBehavior')
 
     # Weight
-    rootNode.gravity = [0, -9.810, 0.]
+    #rootNode.gravity = [0, -9.810, 0.]
+    rootNode.gravity = [0, 0, 0.]
 
     # General solver
     rootNode.addObject('FreeMotionAnimationLoop')
@@ -190,12 +191,23 @@ def createScene(rootNode, config):
         # Sample effector and goal points for given matchign scenario
         current_objectives_name = config.get_currently_assessed_objectives()   
         if "ShapeMatchingBigS" in current_objectives_name:
+            effector_positions, goal_positions = matching_scenario(name_scenario = "BigS", length = trunk_length, 
+                                                n_samples = 20) 
+        if "ShapeMatchingL" in current_objectives_name:
+            effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
+                                           n_samples = 20) 
+        if "ShapeMatchingS" in current_objectives_name:
             effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
                                                 n_samples = 20) 
+        if "ShapeMatchingCircularObject" in current_objectives_name:
+            effector_positions, goal_positions = matching_scenario(name_scenario = "CircularObject", length = trunk_length, 
+                                                n_samples = 4) 
+        if "ShapeMatchingCubicObject" in current_objectives_name:
+            effector_positions, goal_positions = matching_scenario(name_scenario = "CubicObject", length = trunk_length, 
+                                                n_samples = 12) 
         # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
         #                                     n_samples = 1) 
-        #effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
-        #                                    n_samples = 20) 
+
 
         # Goal
         target = rootNode.addChild('Targets')
@@ -244,12 +256,30 @@ def matching_scenario(name_scenario, length, n_samples):
         effector_points = [[0., 0., length]]
         target_points = [[0., -10.0e-3, length]]
     elif name_scenario == "S":
+        length = 2 * length / 3
+        translationZ = 0.5 * length / 3 
+        effector_points = [[0., 0., translationZ + i*length/(n_samples-1)] for i in range(n_samples)]
+        target_points = generate_shape("BigS", length, n_samples)
+        for i in range(len(target_points)):
+            target_points[i][2] += translationZ
+    elif name_scenario == "BigS":
         effector_points = [[0., 0., i*length/(n_samples-1)] for i in range(n_samples)]
-        target_points = generate_shape("S", length, n_samples)
+        target_points = generate_shape("BigS", length, n_samples)
     elif name_scenario == "L":
         effector_points = [[0., 0., i*length/(n_samples-1)] for i in range(n_samples)]
         target_points = generate_shape("L", length, n_samples)
-
+    elif name_scenario == "CircularObject":
+        length = 2 * length / 3
+        translationZ = 2.0 * length / 3 
+        half_circle_perimeter = 2 * np.pi * 25e-3 / 2
+        effector_points = [[0., 0., translationZ + i*half_circle_perimeter/(n_samples-1)] for i in range(n_samples)]
+        target_points = generate_shape("CircularObject", length, n_samples)
+    elif name_scenario == "CubicObject":
+        length = 2 * length / 3
+        translationZ = 2.0 * length / 3 
+        half_cube_perimeter = 2 * np.pi * 25e-3 / 2
+        effector_points = [[0., 0., translationZ + i*half_cube_perimeter/(n_samples-1)] for i in range(n_samples)]
+        target_points = generate_shape("CubicObject", length, n_samples)
     return effector_points, target_points
 
 
@@ -272,7 +302,7 @@ def generate_shape(name_shape, length, n_samples):
         Sampled points describing the input shape.
     """
 
-    if name_shape == "S":
+    if name_shape == "BigS":
         # S shape
         t = np.linspace(-np.pi/2, np.pi/2, n_samples)  
         y = (length/2) * np.sin(2*t) / 2  
@@ -288,4 +318,43 @@ def generate_shape(name_shape, length, n_samples):
         for i in range(0, n_samples // 3):
             points.append([0., i*step, (2 * n_samples // 3) * step])
     
+    elif name_shape == "CircularObject":
+        points = []
+        center = [40e-3, 0, 65e-3]
+        radius = 25e-3
+        for i in range(n_samples):
+            angle_step = (1/2) * 2 * math.pi * i / n_samples
+            x = center[0] - radius * math.cos(angle_step)
+            y = center[1] 
+            z = center[2] + radius * math.sin(angle_step)
+            points.append([x,y,z])
+
+    elif name_shape == "CubicObject":
+        points = []
+        center = [40e-3, 0, 65e-3]
+        side_length = 25e-3
+        step =  3 *side_length / n_samples
+        # Generate points on bottom part of square
+        for i in range(int(n_samples / 3)):
+            x = center[0] - side_length / 2 
+            y = center[1]
+            z = center[2] - side_length / 2 + i * step
+            points.append([x,y,z])
+
+        # Generate points on right part of square
+        for i in range(int(n_samples / 3)):
+            x = center[0] - side_length / 2 + i * step
+            y = center[1]
+            z = center[2] + side_length / 2 
+            points.append([x,y,z])
+
+        # Generate points on upper part of square
+        for i in range(int(n_samples / 3)):
+            x = center[0] + side_length / 2 
+            y = center[1]
+            z = center[2] + side_length / 2 - (i+1) * step
+            points.append([x,y,z])
+
+
+
     return points
