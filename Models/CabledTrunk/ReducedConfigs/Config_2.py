@@ -24,7 +24,7 @@ class ReducedConfig(Config):
     def __init__(self):
         super().__init__()
         self.var_cabled_modules =  3
-        self.n_cables = 3
+        self.n_cables = 5
         self.n_short_cables = 2
         self.end_each_short_cable = [int(self.n_modules / 2), int(self.n_modules / 2)]
 

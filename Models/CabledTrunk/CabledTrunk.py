@@ -104,7 +104,7 @@ def createScene(rootNode, config):
 
     # Create the Trunk body
     trunk = simulation.addChild("Trunk")
-    trunk.addObject('MeshVTKLoader', name='loader', filename = config.get_mesh_filename(mode = "Volume", refine = 0, 
+    trunk.addObject('MeshVTKLoader', name='loader', filename = config.get_mesh_filename(mode = "Volume", refine = 1, 
                                                         generating_function = Trunk, 
                                                         n_modules = config.n_modules,
                                                         r_ext = config.r_ext, d_ext = config.d_ext, r_in = config.r_in, d_in = config.d_in,
@@ -152,13 +152,13 @@ def createScene(rootNode, config):
         positions = []
         dist_Z = 0
         if c < config.n_cables:
-            n_modules = config.n_modules
+            final_module = config.n_modules
         else:
-            n_modules = config.end_each_short_cable[c - config.n_cables]
-        for m in range(1, n_modules):
+            final_module = config.end_each_short_cable[c - config.n_cables]
+        for m in range(1, final_module):
             angle = getattr(config, "theta_" + str(c) + "_" + str(m))
-            r_scaling_factors = 1.0 - m * (1.0 - config.min_radius_percent) / n_modules
-            d_scaling_factor = 1.0 - m * (1.0 - config.min_module_size_percent) / n_modules
+            r_scaling_factors = 1.0 - m * (1.0 - config.min_radius_percent) / config.n_modules
+            d_scaling_factor = 1.0 - m * (1.0 - config.min_module_size_percent) / config.n_modules
             dist_Z += config.d_mspace + d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
             positions.append([(r_scaling_factors * config.r_in - config.dist_to_r_in) * math.cos(angle), 
                              (r_scaling_factors * config.r_in - config.dist_to_r_in) * math.sin(angle), 
@@ -169,7 +169,7 @@ def createScene(rootNode, config):
         cable.addObject('MechanicalObject', name='dofs', position=positions)
         cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
                                 pullPoint = pull_points[c],
-                                indices=list(range(0, n_modules - 1)),
+                                indices=list(range(0, final_module - 1)),
                                 # maxPositiveDisp='70',
                                 minForce=0)
         cable.addObject('BarycentricMapping', name='mapping', mapForces=False, mapMasses=False)

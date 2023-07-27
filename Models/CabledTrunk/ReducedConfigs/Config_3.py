@@ -22,16 +22,14 @@ import numpy as np
 class ReducedConfig(Config):
 
     def __init__(self):
-        # TODO
         super().__init__()
-        self.n_cables = 4
-        self.n_short_cables = 4 * (self.n_modules - 4) 
-        print("self.n_short_cables:", self.n_short_cables)
+        self.n_cables = 3
+        self.n_short_cables = 3 * (self.n_modules - 4) 
         
         self.end_each_short_cable = []
-        for i in range(2, self.n_modules - 2):
-            self.end_each_short_cable += [i, i, i, i]
-        print("self.end_each_short_cable:", len(self.end_each_short_cable))
+        for j in range(3):
+            for i in range(2, self.n_modules - 2):
+                self.end_each_short_cable += [i]
 
         self.init_cables()
 
@@ -40,16 +38,16 @@ class ReducedConfig(Config):
         return {#"ShapeMatchingBigS": ["minimize", t]
                 #"ShapeMatchingL": ["minimize", t]
                 #"ShapeMatchingS": ["minimize", t]
-                #"ShapeMatchingCircularObject": ["minimize", t]
-                "ShapeMatchingCubicObject": ["minimize", t]
+                "ShapeMatchingCircularObject": ["minimize", t]
+                #"ShapeMatchingCubicObject": ["minimize", t]
         }
 
     def get_assessed_together_objectives(self):
         #return [["ShapeMatchingBigS"]]
         #return [["ShapeMatchingL"]]
         #return [["ShapeMatchingS"]]
-        #return [["ShapeMatchingCircularObject"]]
-        return [["ShapeMatchingCubicObject"]]
+        return [["ShapeMatchingCircularObject"]]
+        #return [["ShapeMatchingCubicObject"]]
 
     
     

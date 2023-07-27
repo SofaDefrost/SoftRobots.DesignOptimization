@@ -63,17 +63,18 @@ class Config(GmshDesignOptimization):
     def init_cables(self):
         ### Cables going all the way to Trunk end tip
         # Attachment angles on each module for each cable
-        angle = 2 * np.pi / self.n_cables # Angle between two points on the middle circle of a module
-        for c in range(self.n_cables):
-            for m in range(self.n_modules):
-                exec("self.theta_" + str(c) + "_" + str(m) + " = " + str(c * angle))
+        if self.n_cables != 0:
+            angle = 2 * np.pi / self.n_cables # Angle between two points on the middle circle of a module
+            for c in range(self.n_cables):
+                for m in range(self.n_modules):
+                    exec("self.theta_" + str(c) + "_" + str(m) + " = " + str(c * angle))
 
         ### Shorter cables
         if self.n_short_cables != 0:
             angle_s = 2 * np.pi / self.n_short_cables # Angle between two points on the middle circle of a module
             for c in range(self.n_cables, self.n_cables + self.n_short_cables):
                 for m in range(int(self.end_each_short_cable[c - self.n_cables])):
-                    exec("self.theta_" + str(c) + "_" + str(m) + " = " + str(c * angle_s)) 
+                    exec("self.theta_" + str(c) + "_" + str(m) + " = " + str((c - self.n_cables) * angle_s)) 
 
     def get_design_variables(self):   
         # Build design variables dictionnary
