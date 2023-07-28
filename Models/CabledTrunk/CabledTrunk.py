@@ -128,7 +128,22 @@ def createScene(rootNode, config):
     # trunk_visu.addObject('BarycentricMapping')
 
     # Add collision model
-    # ??
+    if "ReachTargetInTShape" in config.get_currently_assessed_objectives():
+        contacts_trunk = trunk.addChild("CollisionModel")
+        contacts_trunk.addObject('MeshSTLLoader', name='loader', filename= config.get_mesh_filename(mode = "Surface", refine = 0, 
+                                                        generating_function = Trunk, 
+                                                        n_modules = config.n_modules,
+                                                        r_ext = config.r_ext, d_ext = config.d_ext, r_in = config.r_in, d_in = config.d_in,
+                                                        min_radius_percent = config.min_radius_percent, min_module_size_percent = config.min_module_size_percent,
+                                                        d_mspace = config.d_mspace, is_collision = True))
+        contacts_trunk.addObject('MeshTopology', src='@loader')
+        contacts_trunk.addObject('MechanicalObject')
+        contacts_trunk.addObject('TriangleCollisionModel', group=1)
+        contacts_trunk.addObject('LineCollisionModel', group=1)
+        contacts_trunk.addObject('PointCollisionModel', group=1)
+        contacts_trunk.addObject('BarycentricMapping')
+
+
 
     # Fix base of the Trunk
     trunk.addObject('BoxROI', name='boxROI', box=[[-20*config.mm, -20*config.mm, -config.d_ext-(config.d_in/2)], [20*config.mm, 20*config.mm, 0]], drawBoxes=True)
@@ -176,38 +191,45 @@ def createScene(rootNode, config):
 
 
     ### Add effector and goal if we are using an inverse model
-    if config.inverse_mode:
-        # Compute Trunk Length
-        trunk_length = 0
-        for k in range(config.n_modules):
-            d_scaling_factor = 1.0 - k * (1.0 - config.min_module_size_percent) / config.n_modules
-            if k == 0:
-                trunk_length += d_scaling_factor * (config.d_ext + config.d_in / 2)
-            else:
-                trunk_length += d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
-            if k != config.n_modules - 1:
-                trunk_length += config.d_mspace
+    if config.inverse_mode:        
+        
+        ########################################################
+        ### Check if we are using a shape matching objective ###
+        ########################################################
+        matching_objectives = ["ShapeMatchingBigS", "ShapeMatchingL", "ShapeMatchingS",
+                               "ShapeMatchingCircularObject", "ShapeMatchingCubicObject"]
+        current_objectives_name = config.get_currently_assessed_objectives() 
 
-        # Sample effector and goal points for given matchign scenario
-        current_objectives_name = config.get_currently_assessed_objectives()   
-        if "ShapeMatchingBigS" in current_objectives_name:
-            effector_positions, goal_positions = matching_scenario(name_scenario = "BigS", length = trunk_length, 
-                                                n_samples = 20) 
-        if "ShapeMatchingL" in current_objectives_name:
-            effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
-                                           n_samples = 20) 
-        if "ShapeMatchingS" in current_objectives_name:
-            effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
-                                                n_samples = 20) 
-        if "ShapeMatchingCircularObject" in current_objectives_name:
-            effector_positions, goal_positions = matching_scenario(name_scenario = "CircularObject", length = trunk_length, 
-                                                n_samples = 4) 
-        if "ShapeMatchingCubicObject" in current_objectives_name:
-            effector_positions, goal_positions = matching_scenario(name_scenario = "CubicObject", length = trunk_length, 
-                                                n_samples = 12) 
-        # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
-        #                                     n_samples = 1) 
+        if any(x in matching_objectives for x in current_objectives_name):
+            # Compute Trunk Length
+            trunk_length = 0
+            for k in range(config.n_modules):
+                d_scaling_factor = 1.0 - k * (1.0 - config.min_module_size_percent) / config.n_modules
+                if k == 0:
+                    trunk_length += d_scaling_factor * (config.d_ext + config.d_in / 2)
+                else:
+                    trunk_length += d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
+                if k != config.n_modules - 1:
+                    trunk_length += config.d_mspace
 
+            # Sample effector and goal points for given matchign scenario
+            if "ShapeMatchingBigS" in current_objectives_name:
+                effector_positions, goal_positions = matching_scenario(name_scenario = "BigS", length = trunk_length, 
+                                                    n_samples = 20) 
+            if "ShapeMatchingL" in current_objectives_name:
+                effector_positions, goal_positions = matching_scenario(name_scenario = "L", length = trunk_length, 
+                                            n_samples = 20) 
+            if "ShapeMatchingS" in current_objectives_name:
+                effector_positions, goal_positions = matching_scenario(name_scenario = "S", length = trunk_length, 
+                                                    n_samples = 20) 
+            if "ShapeMatchingCircularObject" in current_objectives_name:
+                effector_positions, goal_positions = matching_scenario(name_scenario = "CircularObject", length = trunk_length, 
+                                                    n_samples = 4) 
+            if "ShapeMatchingCubicObject" in current_objectives_name:
+                effector_positions, goal_positions = matching_scenario(name_scenario = "CubicObject", length = trunk_length, 
+                                                    n_samples = 12) 
+            # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
+            #                                     n_samples = 1) 
 
         # Goal
         target = rootNode.addChild('Targets')
