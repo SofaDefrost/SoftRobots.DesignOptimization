@@ -43,7 +43,7 @@ def main(args=None):
     parser.add_argument('--optimization', '-o', help='Launch design optimization: -o', action='store_true')
     parser.add_argument('--n_iter', '-ni', help='Number of design optimization iterations: -ni n_iter', default= 10)
     parser.add_argument('--solver_library', '-sl', help='Name of the solver used for design optimization: -sl solver_name.', default="optuna")
-    parser.add_argument('--solver_name', '-sn', help='Name of the type of solver used for design optimization: -sn solver_name.', default="evolutionary")
+    parser.add_argument('--solver_name', '-sn', help='Name of the type of solver used for design optimization: -sn solver_name.', default="bayesian")
     implemented_solvers = {"optuna": ["evolutionary", "bayesian"]}
     
     # Design Simulation

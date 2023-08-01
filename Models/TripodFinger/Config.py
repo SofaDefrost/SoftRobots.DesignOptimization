@@ -29,14 +29,14 @@ class Config(GmshDesignOptimization):
         self.mm = 1e-3
 
         # Geometry parameters
-        self.L = 60.* self.mm
-        self.l = 40.* self.mm
+        self.L = 100.* self.mm
+        self.l = 33.* self.mm
         self.e1 = 8.* self.mm
         self.e2 = 5.* self.mm
         self.e3 = 4.* self.mm
         self.n = 7
         for i in range(self.n):
-            exec("self.d" + str(i) + "= 28.*self.mm")
+            exec("self.d" + str(i) + "= 21.*self.mm")
         
         # Thickness of the finger / length of extrusion
         self.w = 20.0 * self.mm
@@ -49,8 +49,11 @@ class Config(GmshDesignOptimization):
         self.rho = 500 # kg/m3
 
         # Simulation parameters
-        self.young_modulus = 7e6
-        self.poisson_ratio = 0.45
+        self.youngModulus = 0.02176 # In GPa, optimized
+        self.poissonRatio = 0.45
+
+        # Sensing parameters
+        self.initTorque = 0.1
 
     def get_design_variables(self):   
         # Maximum bound variables
@@ -62,6 +65,9 @@ class Config(GmshDesignOptimization):
 
         # Build design variables dictionnary
         design_variables = {
+            "youngModulus": [self.youngModulus,5.0e-4, 0.5],
+            "poissonRatio": [self.poissonRatio,0.3,0.49],
+            "initTorque": [self.initTorque,0.0,0.1],
             "e1": [self.e1, 1*self.mm, self.e1max],
             "e2": [self.e2, 1*self.mm, self.e2max],
             "e3": [self.e3, 1*self.mm, self.e3max],
@@ -78,12 +84,13 @@ class Config(GmshDesignOptimization):
         "ForceTransmissionX": ["minimize", t],
         "InterpenetrationPenaltyInitX": ["minimize", 1],
         "InterpenetrationPenaltyEndX": ["minimize", t],
-        "LocateContactPrecision": ["minimize", t]
+        "LocateContactPrecision": ["minimize", t],
+        "TorqueCalibration": ["minimize", t]
         }
 
     def get_assessed_together_objectives(self):
         return [["ContactForceX", "ContactForceNorm", "Mass", "ForceTransmissionX", 
-                 "InterpenetrationPenaltyInitX", "InterpenetrationPenaltyEndX", "LocateContactPrecision"]]
+                 "InterpenetrationPenaltyInitX", "InterpenetrationPenaltyEndX", "LocateContactPrecision","TorqueCalibration"]]
 
     def set_design_variables(self, new_values):
         super(Config,self).set_design_variables(new_values) 
