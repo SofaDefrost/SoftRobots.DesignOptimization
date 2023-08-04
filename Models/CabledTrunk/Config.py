@@ -24,6 +24,7 @@ class Config(GmshDesignOptimization):
     def init_model_parameters(self):
         ### Resolution mode
         self.inverse_mode = True
+        self.use_contact = False
 
         ### Conversion to mm
         self.mm = 1e-3
@@ -46,6 +47,15 @@ class Config(GmshDesignOptimization):
 
         ### Link between modules
         self.d_mspace = 3 * self.mm # Distance between two modules
+
+        ### General Parameters
+        # Total Length
+        self.update_total_length()
+
+        # Weight
+        self.update_total_volume()
+        self.volumetric_mass = 1.08 * 10e-3 / 10e-6 # Constructor data for Dragonskin 30: 1.08 g/cc
+        print("Volume:", self.total_volume)
 
         ### Cables ###
         # High level params        
@@ -75,6 +85,42 @@ class Config(GmshDesignOptimization):
             for c in range(self.n_cables, self.n_cables + self.n_short_cables):
                 for m in range(int(self.end_each_short_cable[c - self.n_cables])):
                     exec("self.theta_" + str(c) + "_" + str(m) + " = " + str((c - self.n_cables) * angle_s)) 
+
+    def update_total_length(self):
+        self.total_length = 0
+        for k in range(self.n_modules):
+            d_scaling_factor = 1.0 - k * (1.0 - self.min_module_size_percent) / self.n_modules
+            if k == 0:
+                self.total_length += d_scaling_factor * (self.d_ext + self.d_in / 2)
+            else:
+                self.total_length += d_scaling_factor * (self.d_ext + self.d_in + self.d_ext)
+            if k != self.n_modules - 1:
+                self.total_length += self.d_mspace
+
+    def update_total_volume(self):
+        def volume_cylinder(r, h):
+            return np.pi * r**2 * h
+            
+        def volume_cone_basis(R, r, h):
+            return (1/3) * np.pi * h * (R**2 + r**2 + R * r)
+
+        self.total_volume = 0
+        for k in range(self.n_modules):
+            d_scaling_factor = 1.0 - k * (1.0 - self.min_module_size_percent) / self.n_modules
+            if k == 0:
+                self.total_volume += volume_cylinder(d_scaling_factor * self.r_in, d_scaling_factor * self.d_in / 2)
+                self.total_volume += volume_cone_basis(d_scaling_factor * self.r_in, d_scaling_factor * self.r_ext,
+                                                       d_scaling_factor * self.d_ext)
+            else:
+                self.total_volume += 2 * volume_cone_basis(d_scaling_factor * self.r_in, d_scaling_factor * self.r_ext,
+                                                       d_scaling_factor * self.d_ext)
+                self.total_volume += volume_cylinder(d_scaling_factor * self.r_in, d_scaling_factor * self.d_in)
+
+            if k != self.n_modules - 1:
+                next_d_scaling_factor = 1.0 - (k+1) * (1.0 - self.min_module_size_percent) / self.n_modules
+                
+                self.total_volume += volume_cone_basis(d_scaling_factor * self.r_ext, next_d_scaling_factor * self.r_ext,
+                                                       self.d_mspace)
 
     def get_design_variables(self):   
         # Build design variables dictionnary

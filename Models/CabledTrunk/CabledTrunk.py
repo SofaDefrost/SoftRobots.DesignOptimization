@@ -86,8 +86,8 @@ def createScene(rootNode, config):
     rootNode.addObject('VisualStyle', displayFlags='hideInteractionForceFields showForceFields showCollisionModels showBehavior')
 
     # Weight
-    #rootNode.gravity = [0, -9.810, 0.]
-    rootNode.gravity = [0, 0, 0.]
+    rootNode.gravity = [0, -9.810, 0.]
+    #rootNode.gravity = [0, 0, 0.]
 
     # General solver
     rootNode.addObject('FreeMotionAnimationLoop')
@@ -112,7 +112,7 @@ def createScene(rootNode, config):
                                                         d_mspace = config.d_mspace))
     trunk.addObject('MeshTopology', src='@loader', name='container')
     trunk.addObject('MechanicalObject', name='dofs', template='Vec3')
-    trunk.addObject('UniformMass', totalMass=0.1)
+    trunk.addObject('UniformMass', totalMass= config.total_volume * config.volumetric_mass)
     trunk.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=0.45,  youngModulus=450000)
 
 
@@ -127,8 +127,8 @@ def createScene(rootNode, config):
     # trunk_visu.addObject('OglModel', color = [1., 1., 1., 1.])
     # trunk_visu.addObject('BarycentricMapping')
 
-    # Add collision model
-    if "ReachTargetInTShape" in config.get_currently_assessed_objectives():
+    # Add Trunk collision model
+    if config.use_contact:
         contacts_trunk = trunk.addChild("CollisionModel")
         contacts_trunk.addObject('MeshSTLLoader', name='loader', filename= config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = Trunk, 
@@ -143,6 +143,8 @@ def createScene(rootNode, config):
         contacts_trunk.addObject('PointCollisionModel', group=1)
         contacts_trunk.addObject('BarycentricMapping')
 
+
+    # TODO: add corridor
 
 
     # Fix base of the Trunk
@@ -193,26 +195,19 @@ def createScene(rootNode, config):
     ### Add effector and goal if we are using an inverse model
     if config.inverse_mode:        
         
-        ########################################################
-        ### Check if we are using a shape matching objective ###
-        ########################################################
-        matching_objectives = ["ShapeMatchingBigS", "ShapeMatchingL", "ShapeMatchingS",
-                               "ShapeMatchingCircularObject", "ShapeMatchingCubicObject"]
         current_objectives_name = config.get_currently_assessed_objectives() 
 
-        if any(x in matching_objectives for x in current_objectives_name):
-            # Compute Trunk Length
-            trunk_length = 0
-            for k in range(config.n_modules):
-                d_scaling_factor = 1.0 - k * (1.0 - config.min_module_size_percent) / config.n_modules
-                if k == 0:
-                    trunk_length += d_scaling_factor * (config.d_ext + config.d_in / 2)
-                else:
-                    trunk_length += d_scaling_factor * (config.d_ext + config.d_in + config.d_ext)
-                if k != config.n_modules - 1:
-                    trunk_length += config.d_mspace
+        # Compute Trunk Length
+        config.update_total_length()
+        trunk_length = config.total_length
 
-            # Sample effector and goal points for given matchign scenario
+        ########################################
+        ### Manage shape matching objectives ###
+        ########################################
+        matching_objectives = ["ShapeMatchingBigS", "ShapeMatchingL", "ShapeMatchingS",
+                               "ShapeMatchingCircularObject", "ShapeMatchingCubicObject"]
+        if any(x in matching_objectives for x in current_objectives_name):
+            # Sample effector and goal points for given matching scenario
             if "ShapeMatchingBigS" in current_objectives_name:
                 effector_positions, goal_positions = matching_scenario(name_scenario = "BigS", length = trunk_length, 
                                                     n_samples = 20) 
@@ -230,6 +225,13 @@ def createScene(rootNode, config):
                                                     n_samples = 12) 
             # effector_positions, goal_positions = matching_scenario(name_scenario = "basic", length = trunk_length, 
             #                                     n_samples = 1) 
+
+        #####################################
+        ### Manage exploration objectives ###
+        #####################################
+        if "ReachTargetInTShape" in current_objectives_name:
+            effector_positions = [[0, 0, 2/3 * trunk_length], [0, 0, trunk_length]]
+            goal_positions = [[0, 0, 2/3 * trunk_length], [trunk_length / 3, 0, 2/3 * trunk_length]]
 
         # Goal
         target = rootNode.addChild('Targets')

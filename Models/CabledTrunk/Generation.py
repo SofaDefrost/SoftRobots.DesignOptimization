@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Shape generation for the SensorFinger"""
+"""Shape generation for the Cabled Trunk"""
 
-__authors__ = "bgouabau, tnavez, qpeyron"
+__authors__ = "tnavez"
 __contact__ = "tanguy.navez@inria.fr, quentin.peyron@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020, Inria"
@@ -56,7 +56,7 @@ def generate_module(r_ext, d_ext, r_in, d_in, translation):
 ### Geometry Generation Functions ###
 #####################################  
 def Trunk(n_modules, r_ext, d_ext, r_in, d_in, min_radius_percent, min_module_size_percent,
-          d_mspace):    
+          d_mspace, is_collision = False):    
 
     # Generate modules and links describing the Trunk
     module_volumes = []
@@ -76,18 +76,20 @@ def Trunk(n_modules, r_ext, d_ext, r_in, d_in, min_radius_percent, min_module_si
         dist_Z += module_length + d_mspace
 
         # Generate link to previous module
-        if last_loop_ext_2 is not None:
-            volume = gmsh.model.occ.addThruSections([last_loop_ext_2, curr_loop_ext_1])
-            link_volumes.append(volume)
-        
-        last_loop_ext_2 = curr_loop_ext_2
+        if not is_collision:
+            if last_loop_ext_2 is not None:
+                volume = gmsh.model.occ.addThruSections([last_loop_ext_2, curr_loop_ext_1])
+                link_volumes.append(volume)
+            
+            last_loop_ext_2 = curr_loop_ext_2
     gmsh.model.occ.synchronize()
 
     # Merge volumes together
     trunk_volume = module_volumes[0]
     for i in range(1,n_modules):
         # Union with link
-        trunk_volume = gmsh.model.occ.fragment(trunk_volume, link_volumes[i-1])[0]
+        if not is_collision:
+            trunk_volume = gmsh.model.occ.fragment(trunk_volume, link_volumes[i-1])[0]
         # Union with next module
         trunk_volume = gmsh.model.occ.fragment(trunk_volume, module_volumes[i])[0]
     gmsh.model.occ.synchronize()
