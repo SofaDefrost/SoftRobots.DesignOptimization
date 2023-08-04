@@ -30,7 +30,8 @@ class Config(GmshDesignOptimization):
 
         # Geometry parameters
         self.L = 100.* self.mm
-        self.l = 33.* self.mm
+        # self.l = 33.* self.mm
+        self.l = 33. * self.mm
         self.e1 = 8.* self.mm
         self.e2 = 5.* self.mm
         self.e3 = 4.* self.mm
@@ -49,11 +50,12 @@ class Config(GmshDesignOptimization):
         self.rho = 500 # kg/m3
 
         # Simulation parameters
-        self.youngModulus = 0.02176 # In GPa, optimized
-        self.poissonRatio = 0.45
+        self.youngModulus = 0.02997 # In GPa, optimized
+        self.poissonRatio = 0.4713
+        self.distanceObject = 47.8e-3
 
         # Sensing parameters
-        self.initTorque = 0.1
+        self.initTorque = 0.0294 # in N.m, due to the pre-stress of the FSR sensor
 
     def get_design_variables(self):   
         # Maximum bound variables
@@ -68,6 +70,7 @@ class Config(GmshDesignOptimization):
             "youngModulus": [self.youngModulus,5.0e-4, 0.5],
             "poissonRatio": [self.poissonRatio,0.3,0.49],
             "initTorque": [self.initTorque,0.0,0.1],
+            "distanceObject": [self.distanceObject,20.0e-3,50.0e-3],
             "e1": [self.e1, 1*self.mm, self.e1max],
             "e2": [self.e2, 1*self.mm, self.e2max],
             "e3": [self.e3, 1*self.mm, self.e3max],
