@@ -67,10 +67,6 @@ class Config(GmshDesignOptimization):
 
         # Build design variables dictionnary
         design_variables = {
-            "youngModulus": [self.youngModulus,5.0e-4, 0.5],
-            "poissonRatio": [self.poissonRatio,0.3,0.49],
-            "initTorque": [self.initTorque,0.0,0.1],
-            "distanceObject": [self.distanceObject,20.0e-3,50.0e-3],
             "e1": [self.e1, 1*self.mm, self.e1max],
             "e2": [self.e2, 1*self.mm, self.e2max],
             "e3": [self.e3, 1*self.mm, self.e3max],
