@@ -111,8 +111,7 @@ def createScene(rootNode, config):
                                                         min_radius_percent = config.min_radius_percent, min_module_size_percent = config.min_module_size_percent,
                                                         d_mspace = config.d_mspace))
     trunk.addObject('MeshTopology', src='@loader', name='container')
-    trunk.addObject('MechanicalObject', name='dofs', template='Vec3')
-    trunk.addObject('UniformMass', totalMass= config.total_volume * config.volumetric_mass)
+    trunk_MO = trunk.addObject('MechanicalObject', name='dofs', template='Vec3')
     trunk.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=0.45,  youngModulus=450000)
 
 
@@ -126,8 +125,45 @@ def createScene(rootNode, config):
     #                                                     d_mspace = config.d_mspace))
     # trunk_visu.addObject('OglModel', color = [1., 1., 1., 1.])
     # trunk_visu.addObject('BarycentricMapping')
+    
 
-    # Add Trunk collision model
+
+    # Fix base of the Trunk
+    trunk.addObject('BoxROI', name='boxROI', box=[[-20*config.mm, -20*config.mm, -config.d_ext-(config.d_in/2)], [20*config.mm, 20*config.mm, 0]], drawBoxes=True)
+    #trunk.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
+    trunk.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e10) 
+
+
+    ##################
+    ### Add camera ###
+    ##################  
+    if config.use_camera:
+        pos_camera = [0, 0, config.total_length]
+        camera_box = trunk.addObject('BoxROI', name='camera', 
+                        box=[[pos_camera[0] - config.camera_dimensions[0]/2, pos_camera[1] - config.camera_dimensions[1]/2, pos_camera[2] - config.camera_dimensions[2]/2], 
+                            [pos_camera[0] + config.camera_dimensions[0]/2, pos_camera[1] + config.camera_dimensions[1]/2, pos_camera[2] + config.camera_dimensions[2]/2]], 
+                            drawBoxes=True)
+        trunk.init() 
+        
+        all_indices = list(range(len(trunk_MO.findData('position').value)))
+        remaining_indices = [index for index in all_indices if index not in camera_box.findData('indices').value]
+
+        # Differentiate weights of both camera and body
+        trunk_body = trunk.addChild("Body")
+        trunk_body.addObject('UniformMass', indices = remaining_indices, 
+                            totalMass= config.total_volume * config.volumetric_mass)
+        
+        camera = trunk.addChild("Camera")
+        camera.addObject('UniformMass', indices = camera_box.findData('indices').value, 
+                        totalMass = config.camera_weight)
+    else: 
+        trunk.addObject('UniformMass', totalMass= config.total_volume * config.volumetric_mass)
+
+
+
+    ########################
+    ### Collision Model ####
+    ######################## 
     if config.use_contact:
         contacts_trunk = trunk.addChild("CollisionModel")
         contacts_trunk.addObject('MeshSTLLoader', name='loader', filename= config.get_mesh_filename(mode = "Surface", refine = 0, 
@@ -143,14 +179,7 @@ def createScene(rootNode, config):
         contacts_trunk.addObject('PointCollisionModel', group=1)
         contacts_trunk.addObject('BarycentricMapping')
 
-
     # TODO: add corridor
-
-
-    # Fix base of the Trunk
-    trunk.addObject('BoxROI', name='boxROI', box=[[-20*config.mm, -20*config.mm, -config.d_ext-(config.d_in/2)], [20*config.mm, 20*config.mm, 0]], drawBoxes=True)
-    #trunk.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
-    trunk.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e10) 
 
     ##################
     ### Add cables ###
@@ -187,7 +216,7 @@ def createScene(rootNode, config):
         cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
                                 pullPoint = pull_points[c],
                                 indices=list(range(0, final_module - 1)),
-                                # maxPositiveDisp='70',
+                                maxPositiveDisp= 100,
                                 minForce=0)
         cable.addObject('BarycentricMapping', name='mapping', mapForces=False, mapMasses=False)
 

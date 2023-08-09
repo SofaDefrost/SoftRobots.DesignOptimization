@@ -25,6 +25,7 @@ class Config(GmshDesignOptimization):
         ### Resolution mode
         self.inverse_mode = True
         self.use_contact = False
+        self.use_camera = False
 
         ### Conversion to mm
         self.mm = 1e-3
@@ -56,6 +57,10 @@ class Config(GmshDesignOptimization):
         self.update_total_volume()
         self.volumetric_mass = 1.08 * 10e-3 / 10e-6 # Constructor data for Dragonskin 30: 1.08 g/cc
         print("Volume:", self.total_volume)
+
+        ### Camera ###
+        self.camera_weight = 0.090 # 90g
+        self.camera_dimensions = [14 * self.mm, 14 * self.mm, 20.5 * self.mm ] # dimensiosn in 3 directions for this camera: https://www.camera-poussee.fr/produit/camera-dinspection-eco-duo-23mm-et-14mm/?attribute_diametre-du-jonc-de-la-tete-23mm=5.2mm&attribute_longueur-des-joncs=30m&attribute_tetes-camera=classiques&attribute_taille-de-lecran=classique+7%22&utm_source=Google%20Shopping&utm_campaign=cam%C3%A9ra%20pouss%C3%A9&utm_medium=cpc&utm_term=15170&gclid=Cj0KCQjwrMKmBhCJARIsAHuEAPQme46Iy0sT9Bw2PVE8FdvJ4Cmz8jIlChSl3r3x1N2sNBc74LjZjL8aApqrEALw_wcB
 
         ### Cables ###
         # High level params        
