@@ -21,7 +21,7 @@ def define_parameters():
     ea1 = 8.0 * mm
     ea2 = 4.0 * mm
     La = 6.0 * mm
-    la = 40.0 * mm
+    la = 33.0 * mm
     inter = 15.2 * mm
     rHole = 1.7 * mm
     return ea1, ea2, La, la, inter, rHole

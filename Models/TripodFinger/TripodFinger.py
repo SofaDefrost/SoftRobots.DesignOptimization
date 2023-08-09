@@ -12,6 +12,7 @@ import math
 import numpy as np
 import pyvista
 import copy
+import csv
 
 import Sofa
 
@@ -55,12 +56,13 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         # Time and intermediate angle intervals
         self.iter_eval = self.max_iter - 5
-        self.n_target_angles = 5
+        self.n_target_angles = 8
         self.break_iter_per_step = 3 # Number of iter for reaching equilibrium between each intemediate target angle, for avoiding dynamical effect      
         self.init_angle_targets()
 
         # Calibration lists
         self.int_interval_torques = []
+        self.list_data = [[]]
 
     def init_angle_targets(self):
         """"
@@ -87,6 +89,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             # Add breaks
             self.angles_per_dt += [prev_angle for a in range(self.break_iter_per_step)]
             self.final_break_dt.append((t+1) * (increments_per_target + self.break_iter_per_step) - 1)
+
+        print(str(self.target_angles))
 
     # A method for dealing with one constraint
     def _dealConstraint(self, s):
@@ -143,12 +147,15 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
 
     def onAnimateBeginEvent(self, dt):
-        
+
+        angle = 0.0
         ### Incremental update of servomotor angular position
         if self.current_iter < self.iter_eval:
-            self.actuator.ServoMotor.angleIn = self.angles_per_dt[self.current_iter]
+            angle = self.angles_per_dt[self.current_iter]
         else:
-            self.actuator.ServoMotor.angleIn = self.angleInit + self.max_angle
+            angle = self.angleInit + self.max_angle
+
+        self.actuator.ServoMotor.angleIn = angle
 
         ### Initial coordinates of collision meshes vertices
         if self.current_iter == 0:
@@ -161,6 +168,9 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             if self.current_iter == self.final_break_dt[0]:
                 self.final_break_dt.pop(0)
                 self.int_interval_torques.append(self.evaluate_torque().tolist()[0])
+
+        ### Save torque and angular displacement at each time step
+        self.list_data.append([angle,self.evaluate_torque()[0][0]])
 
         self.current_iter += 1
 
@@ -307,14 +317,36 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Calibration metric
                 if "TorqueCalibration" == current_objective_name:
+
+                    # List of simulated torques, taking into account an eventual offset initTorque
+                    sim_torque = np.reshape(self.int_interval_torques, (1, self.n_target_angles))[0]-self.config.initTorque*np.ones(self.n_target_angles)
+                    print("Torques measured in simulation", sim_torque)
+
                     # List of measured torque on the physical prototype
-                    print("Torques measured in simulation", self.int_interval_torques)
                     if self.config.use_object:
-                        ground_truth_torques = [-0.04, -0.07, -0.42, -0.85, -1.05]
+                        # Experimental data: centerline of the pointcloud, with the offset, for N = 8
+                        ground_truth_torques = [-0.1117, -0.1997, -0.1940, -0.3172, -0.3711, -0.5734, -0.8411, -1.6110]
                     else: 
-                        ground_truth_torques = [-0.04, -0.07, -0.10, -0.15, -0.18]
-                    self.TorqueCalibrationMetric = np.linalg.norm(np.array(ground_truth_torques) - 
-                                                                  np.array(self.int_interval_torques))
+                        # ground_truth_torques = [-0.04, -0.07, -0.10, -0.15, -0.18]
+                        # Experimental data: simple interpolation
+                        ground_truth_torques = [-0.17, -0.18, -0.2829, -0.325, -0.44]
+                        # Experimental data: linear regression and interpolation, without the offset
+                        ground_truth_torques = [-0.076, -0.152, -0.228, -0.304, -0.380]
+
+                    error = np.subtract(np.array(ground_truth_torques),sim_torque)
+                    print("Errors: " + str(error))
+
+                    # RMS value of the error as objective function to minimize
+                    self.TorqueCalibrationMetric = np.sqrt(np.mean(error**2))
+
+                    # Saves the values of angular displacement and torque during the complete simulation
+                    # with open('TripodFinger_angle_torque_Eopt_0p02176_objet30.csv', 'w', newline='') as f:
+                    #     # using csv.writer method from CSV package
+                    #     write = csv.writer(f, delimiter=',',
+                    #                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    #     for k in range(0, len(self.list_data)):
+                    #         write.writerow(self.list_data[k])
+
                     print("Torque calibration metric:" + str(self.TorqueCalibrationMetric))
                     self.objectives.append(self.TorqueCalibrationMetric)
                     
@@ -415,21 +447,21 @@ def createScene(rootNode, config):
     rootNode.addObject('DefaultPipeline')
     rootNode.addObject('BruteForceBroadPhase')
     rootNode.addObject('BVHNarrowPhase')
-    frictionCoef=0.1
+    frictionCoef=0.05
     rootNode.addObject('RuleBasedContactManager', responseParams="mu="+str(frictionCoef),
                                                     name='Response', response='FrictionContactConstraint')#frictionCoef=0.1
-    rootNode.addObject('LocalMinDistance',alarmDistance=25e-3, contactDistance=0.1e-3, angleCone=0.01)
+    rootNode.addObject('LocalMinDistance',alarmDistance=5e-3, contactDistance=0.1e-3, angleCone=0.01)
     
     # Set up the pipeline for the collision and mechanics computation
     rootNode.addObject('GenericConstraintSolver', tolerance="1e-6", maxIterations="10000")
     rootNode.Simulation.addObject('GenericConstraintCorrection')
-    rootNode.Simulation.addObject('EulerImplicitSolver', name='TimeIntegrationSchema')
+    rootNode.Simulation.addObject('EulerImplicitSolver', name='TimeIntegrationSchema',firstOrder = True)
     rootNode.Simulation.addObject('SparseLDLSolver', name='LinearSolver', template="CompressedRowSparseMatrixMat3x3d")
 
     # Create one actuated finger
     actuatedFinger = actuated_finger_lib.ActuatedFinger(
-        youngModulus = config.young_modulus,
-        poissonRatio = config.poisson_ratio,
+        youngModulus = config.youngModulus * 1.0e9,
+        poissonRatio = config.poissonRatio,
         stlMeshFileNameIn1 = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = ContactSurfaceIn1,
                                                         L = config.L, e1 = config.e1, e2 = config.e2, 
@@ -465,7 +497,10 @@ def createScene(rootNode, config):
     if config.use_object:
         rootNode.Modelling.addChild('Obstacle')
 
-        cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[30.0e-3, 0.0, 50.0e-3],
+        # The most positive x side of the finger is located at x = 3mm, and the radius of the obstacle is 5mm
+        # So to be at 30mm from the finger, the obstacle center should be at x = 3 + 30 + 5 mm
+        # distanceObject represents the 3 + 30 mm
+        cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[config.distanceObject+5.0e-3, 0.0, 80.0e-3],
                             surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/cylinder.stl',
                             MOscale=10e-3,
                             uniformScale=0.5,
@@ -475,7 +510,7 @@ def createScene(rootNode, config):
         cylObst.mstate.name = 'dofs'
 
         # Fix the object in space
-        fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, cylObst, translation=[30.0e-3, 0.0, 70.0e-3],
+        fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, cylObst, translation=[config.distanceObject+5.0e-3, 0.0, 100.0e-3],
                             scale=[10e-3, 10e-3, 10e-3])
         rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
 
@@ -489,7 +524,7 @@ def createScene(rootNode, config):
                         showObjectScale=2e-3,
                         drawMode = 1,
                         showColor = "green",
-                        translation2=[30.0e-3-0.5*10e-3, 0, 70.0e-3])
+                        translation2=[config.distanceObject+5.0e-3-0.5*10e-3, 0, 100.0e-3])
 
     # Add the simulated elements to the Simulation node
     rootNode.Simulation.addChild(actuatedFinger.RigidifiedStructure.DeformableParts)

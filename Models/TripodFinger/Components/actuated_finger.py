@@ -81,7 +81,7 @@ class ActuatedFinger(Sofa.Prefab):
         servoArm.RigidParts.addObject('RigidRigidMapping', index=0, input=servoArm.dofs.getLinkPath())
 
         # Add a fixing box to constrain the other part of the finger        
-        FixingBox(self, self.elasticMaterial, translation=[10.0e-3, 0.0, 14.0e-3], scale=[15e-3, 25e-3, 6e-3])
+        FixingBox(self, self.elasticMaterial, translation=[5.0e-3, 0.0, 14.0e-3], scale=[15e-3, 25e-3, 6e-3])
         self.FixingBox.BoxROI.drawBoxes = True
 
         # Add collision models, to compute collision between the finger and the object,

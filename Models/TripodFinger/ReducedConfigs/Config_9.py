@@ -3,6 +3,10 @@
 This is a scene with object for calibration purpose.
 """
 
+"""
+Same config as config 8, but the value of Poisson Coefficient in the main Config file should be 0.49 instead of 0.45
+"""
+
 __authors__ = "tnavez"
 __contact__ = "tanguy.navez@inria.fr"
 __version__ = "1.0.0"
@@ -25,9 +29,7 @@ class ReducedConfig(Config):
         super().__init__()
 
     def get_design_variables(self):   
-        return {"youngModulus": [self.youngModulus, 5e5, 1e7],
-                "initTorque": [self.initTorque,0.0,0.2]}
-                # "PoissonRatio": [self.poisson_ratio, 0.4, 0.49]
+        return {"youngModulus": [self.youngModulus, 1.0e-3, 2.0e-2]}
 
 
     def get_objective_data(self):
