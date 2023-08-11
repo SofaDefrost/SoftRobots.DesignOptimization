@@ -90,6 +90,7 @@ class Config(GmshDesignOptimization):
             for c in range(self.n_cables, self.n_cables + self.n_short_cables):
                 for m in range(int(self.end_each_short_cable[c - self.n_cables])):
                     exec("self.theta_" + str(c) + "_" + str(m) + " = " + str((c - self.n_cables) * angle_s)) 
+                    
 
     def update_total_length(self):
         self.total_length = 0
@@ -138,12 +139,15 @@ class Config(GmshDesignOptimization):
         for c in range(self.n_cables):
             for m in ids_var_cable_modules:
                 design_variables["theta_" + str(c) + "_" + str(m)] = [exec("self.theta_" + str(c) + "_" + str(m)), 0, 2*np.pi]
+
         # Short cables
         for c in range(self.n_cables, self.n_cables + self.n_short_cables):
-                gap_var_c_modules = int(self.end_each_short_cable[c - self.n_cables] / self.var_cabled_modules)
-                ids_var_c_modules = [self.end_each_short_cable[c - self.n_cables] - 1 - i*gap_var_c_modules for i in range(self.var_cabled_modules)]
+                max_var_cable_modules = min(self.end_each_short_cable[c - self.n_cables] - 1, self.var_cabled_modules)
+                gap_var_c_modules = int(self.end_each_short_cable[c - self.n_cables] / max_var_cable_modules)
+                ids_var_c_modules = [self.end_each_short_cable[c - self.n_cables] - 1 - i*gap_var_c_modules for i in range(max_var_cable_modules)]
                 for m in ids_var_c_modules:
                     design_variables["theta_" + str(c) + "_" + str(m)] = [exec("self.theta_" + str(c) + "_" + str(m)), 0, 2*np.pi]      
+
         return design_variables
 
     def get_objective_data(self):
@@ -167,7 +171,7 @@ class Config(GmshDesignOptimization):
             ids_var_cable_modules.insert(0, 0)
         pairs_var_cable_modules = [[ids_var_cable_modules[i-1], ids_var_cable_modules[i]]
                                    for i in range(1, len(ids_var_cable_modules))]
-
+        
         for c in range(self.n_cables):
             for p in pairs_var_cable_modules:
                 dist_angles = getattr(self, "theta_" + str(c) + "_" + str(p[1])) - getattr(self, "theta_" + str(c) + "_" + str(p[0]))
@@ -180,15 +184,15 @@ class Config(GmshDesignOptimization):
 
         # Update non variable angles values to smooth short length cables trajectories
         for c in range(self.n_cables, self.n_cables + self.n_short_cables):
-            gap_var_c_modules = int(self.end_each_short_cable[c - self.n_cables] / self.var_cabled_modules)
-            ids_var_c_modules = [self.end_each_short_cable[c - self.n_cables] - 1 - i*gap_var_c_modules for i in range(self.var_cabled_modules)]
+            max_var_cable_modules = min(self.end_each_short_cable[c - self.n_cables] - 1, self.var_cabled_modules)
+            gap_var_c_modules = int(self.end_each_short_cable[c - self.n_cables] / max_var_cable_modules)
+            ids_var_c_modules = [self.end_each_short_cable[c - self.n_cables] - 1 - i*gap_var_c_modules for i in range(max_var_cable_modules)]
             ids_var_c_modules.reverse()
             
             if ids_var_c_modules[0] != 0:
                 ids_var_c_modules.insert(0, 0)
             pairs_var_c_modules = [[ids_var_c_modules[i-1], ids_var_c_modules[i]]
                                     for i in range(1, len(ids_var_c_modules))]
-        
             for p in pairs_var_c_modules:
                 dist_angles = getattr(self, "theta_" + str(c) + "_" + str(p[1])) - getattr(self, "theta_" + str(c) + "_" + str(p[0]))
                 signed_dist_angles = (dist_angles + np.pi) % (2 * np.pi) - np.pi
