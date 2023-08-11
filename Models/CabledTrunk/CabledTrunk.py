@@ -77,7 +77,7 @@ def createScene(rootNode, config):
         rootNode.addObject('RequiredPlugin', name='SoftRobots.Inverse')
     
     # Setting the time step
-    rootNode.dt = 0.01
+    rootNode.dt = 0.01 
 
     # Define the default view of the scene on SOFA
     rootNode.addChild('Settings')
@@ -91,8 +91,25 @@ def createScene(rootNode, config):
 
     # General solver
     rootNode.addObject('FreeMotionAnimationLoop')
+    if config.use_contact:
+        rootNode.addObject('DefaultPipeline', name="CollisionPipeline")
+        rootNode.addObject('BruteForceBroadPhase')
+        rootNode.addObject('BVHNarrowPhase')
+        rootNode.addObject('DefaultContactManager', name="CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.8")
+        rootNode.addObject('LocalMinDistance', alarmDistance=0.8e-3, contactDistance=0.1e-3, angleCone=0.02)
+
     if config.inverse_mode:
-        rootNode.addObject('QPInverseProblemSolver', epsilon=1e-1)
+        if config.use_contact:
+            rootNode.addObject("QPInverseProblemSolver", 
+                       epsilon = 1e-1, 
+                       tolerance=1e-5, 
+                    #    responseFriction = 0.8, 
+                    #    allowSliding = False, 
+                       minContactForces = 0,
+                       # multithreading = True
+                       ) 
+        else:
+            rootNode.addObject('QPInverseProblemSolver', epsilon=1e-1)
     else:
         rootNode.addObject('GenericConstraintSolver', tolerance="1e-5", maxIterations="100")
 
@@ -165,6 +182,7 @@ def createScene(rootNode, config):
     ### Collision Model ####
     ######################## 
     if config.use_contact:
+        # Trunk collision model
         contacts_trunk = trunk.addChild("CollisionModel")
         contacts_trunk.addObject('MeshSTLLoader', name='loader', filename= config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = Trunk, 
@@ -172,14 +190,43 @@ def createScene(rootNode, config):
                                                         r_ext = config.r_ext, d_ext = config.d_ext, r_in = config.r_in, d_in = config.d_in,
                                                         min_radius_percent = config.min_radius_percent, min_module_size_percent = config.min_module_size_percent,
                                                         d_mspace = config.d_mspace, is_collision = True))
-        contacts_trunk.addObject('MeshTopology', src='@loader')
+        contacts_trunk.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
         contacts_trunk.addObject('MechanicalObject')
         contacts_trunk.addObject('TriangleCollisionModel', group=1)
         contacts_trunk.addObject('LineCollisionModel', group=1)
         contacts_trunk.addObject('PointCollisionModel', group=1)
         contacts_trunk.addObject('BarycentricMapping')
 
-    # TODO: add corridor
+        # Add corridor
+        corridor = simulation.addChild("Corridor")
+        scaling = [0.001, 0.0600, 2/3 * config.total_length] # Corridor in plane y-z, x being positive
+        corridor.addObject('MechanicalObject', template="Rigid3", scale="0.001", dx="0.0", dy="0.0", dz="0.0")
+        #corridor.addObject("UniformMass", totalMass = 100.0)
+        corridor.addObject('RestShapeSpringsForceField', stiffness=1e10)
+        
+
+        contacts_corridor = corridor.addChild("CollisionModel")
+        contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
+                           scale3d = scaling, translation = [0.016, -scaling[1]/2, -0.005])
+        contacts_corridor.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
+        contacts_corridor.addObject('MechanicalObject', name='dofs', template='Vec3')
+        contacts_corridor.addObject('TriangleCollisionModel')
+        #contacts_corridor.addObject('LineCollisionModel')
+        #contacts_corridor.addObject('PointCollisionModel')
+        contacts_corridor.addObject('RigidMapping')
+
+
+        # corridor = simulation.addChild("Corridor")
+        # scaling = [0.001, 0.0600, 2/3 * config.total_length] # Corridor in plane y-z, x being positive
+        # corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
+        #                    scale3d = scaling, translation = [0.016, -scaling[1]/2, -0.005])
+        # corridor.addObject('MeshTopology', src='@loader', name='container')
+        # corridor.addObject('MechanicalObject', name='dofs', template='Vec3')
+
+        # contacts_corridor = corridor.addChild("CollisionModel")
+        # contacts_corridor.addObject('TriangleCollisionModel', group=2)
+        # contacts_corridor.addObject('LineCollisionModel', group=2)
+        # contacts_corridor.addObject('PointCollisionModel', group=2)
 
     ##################
     ### Add cables ###
@@ -259,8 +306,12 @@ def createScene(rootNode, config):
         ### Manage exploration objectives ###
         #####################################
         if "ReachTargetInTShape" in current_objectives_name:
-            effector_positions = [[0, 0, 2/3 * trunk_length], [0, 0, trunk_length]]
-            goal_positions = [[0, 0, 2/3 * trunk_length], [trunk_length / 3, 0, 2/3 * trunk_length]]
+            if config.use_contact:
+                effector_positions = [[0, 0, trunk_length]]
+                goal_positions = [[trunk_length / 3, 0, 2/3 * trunk_length]]
+            else:
+                effector_positions = [[0, 0, 2/3 * trunk_length], [0, 0, trunk_length]]
+                goal_positions = [[0, 0, 2/3 * trunk_length], [trunk_length / 3, 0, 2/3 * trunk_length]]
 
         # Goal
         target = rootNode.addChild('Targets')
