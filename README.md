@@ -25,7 +25,7 @@ More examples will be available in the future.
 Python3 is needed to make use of toolbox.
 The required basic python libraries can be installed with the following bash command:
 ```bash
-pip install pathlib importlib numpy logging 
+pip install pathlib importlib numpy logging plotly
 ```
 
 Additionally, the provided example expects an installation of the following libraries:
@@ -112,8 +112,11 @@ If you use the project in your work, please consider citing it with:
       title={An Open Source Design Optimization Toolbox Evaluated on a Soft Finger}, 
       author={Stefan Escaida Navarro and Tanguy Navez and Olivier Goury and Luis Molina and Christian Duriez},
       year={2023},
-      eprint={2304.07260},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO}
+      journal={IEEE Robotics and Automation Letters},
+      volume={8},
+      number={9},
+      pages={6044--6051},
+      publisher={IEEE},
+      doi={10.1109/LRA.2023.3301272},
 }
 ```
