@@ -56,13 +56,16 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         # Time and intermediate angle intervals
         self.iter_eval = self.max_iter - 5
-        self.n_target_angles = 8
+        self.n_target_angles = self.config.n_target_angles # Number of intermediate angles
         self.break_iter_per_step = 3 # Number of iter for reaching equilibrium between each intemediate target angle, for avoiding dynamical effect      
+           
         self.init_angle_targets()
 
-        # Calibration lists
+        # Evaluation and Calibration data lists
+        self.list_force_X = []
         self.int_interval_torques = []
         self.list_data = [[]]
+        
 
     def init_angle_targets(self):
         """"
@@ -147,6 +150,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
 
     def onAnimateBeginEvent(self, dt):
+        MAX_SERVO = 1.2 # Herkulex limit in N.m.
 
         angle = 0.0
         ### Incremental update of servomotor angular position
@@ -163,14 +167,26 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             if self.config.use_object:
                 self.coords_object_collis_init = copy.deepcopy(self.contact_cylinder_collis.position.value)
 
-        ### Register current torque for calibration purpose
+        ### Register both current forces and current torque for evaluation/calibration purpose
         if len(self.final_break_dt) != 0:
             if self.current_iter == self.final_break_dt[0]:
                 self.final_break_dt.pop(0)
+                # Torque data
                 self.int_interval_torques.append(self.evaluate_torque().tolist()[0])
+                #print("self.int_interval_torques:", self.int_interval_torques)
+                # Contact Force data
+                if self.config.use_object:
+                    self.evaluate_forces()
+                    self.list_force_X.append(self.forceContactX)
+                    #print("self.list_force_X:", self.list_force_X)
 
         ### Save torque and angular displacement at each time step
         self.list_data.append([angle,self.evaluate_torque()[0][0]])
+
+        ### Display when reaching herkulex limite
+        if len(self.int_interval_torques) != 0:
+            if abs(self.int_interval_torques[-1][0]) >  MAX_SERVO:
+                print("Reached servo limit at angular step", len(self.int_interval_torques))
 
         self.current_iter += 1
 
@@ -182,37 +198,10 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
             self.MotorTorque = self.evaluate_torque()
 
+            # Compute contact forces between the finger and the object
             if self.config.use_object:
-                contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
-                constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
-                indices_constraint=[]
-                self.numContact=len(constraint)
-                self.forceContactX=0
-                forceX,forceY,forceZ=0,0,0
-                
-                for i in range(len(constraint)):
-                    indices_constraint.append([int(constraint[i].split(' ')[0]),float(constraint[i].split(' ')[3]),float(constraint[i].split(' ')[4]),float(constraint[i].split(' ')[5])])
-                    norm=(indices_constraint[i][1]**2+indices_constraint[i][2]**2+indices_constraint[i][3]**2)**0.5
-                    ###### Evaluate the normal force
-                    self.forceContactX += 1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1] 
-                    ####### Evaluate force norm
-                    forceX+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
-                    forceY+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][2]
-                    forceZ+=1/norm*contactForces[indices_constraint[i][0]]*indices_constraint[i][3]
-            
-            if self.config.use_object:
-                # In SOFA, force*dt is stored in lambda vectors for ease of use. 
-                # We remove the dt part for obtaining only the force
-                self.forceContactX /= self.rootNode.dt.value
-                forceX /= self.rootNode.dt.value 
-                forceY /= self.rootNode.dt.value
-                forceZ /= self.rootNode.dt.value
+                self.evaluate_forces()
 
-                # Build dict of constraint data from solver
-                constraints_data = {}
-                for constraint in indices_constraint:
-                    constraints_data[constraint[0]] = constraint[1:]
-           
             for i in range(len(current_objectives_name)):
 
                 current_objective_name =  current_objectives_name[i]
@@ -242,12 +231,24 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Contact Force along X-axis
                 if "ContactForceX" == current_objective_name:
-                    print("The Contact Force along X: "+str(self.forceContactX))
-                    self.objectives.append(self.forceContactX)
+                    # print("The Contact Force along X: "+str(self.forceContactX))
+                    # self.objectives.append(self.forceContactX)
+
+                    acceptable_forces = [abs(self.list_force_X[i])
+                                            for i in range(len(self.int_interval_torques))
+                                            if self.list_force_X[i] != 0 # Remove case where there is no contact 
+                                            and abs(self.int_interval_torques[i][0]) <=  MAX_SERVO] # Remove unreachable state because of hardware limitations
+                    if len(acceptable_forces) == 0:
+                        self.BestContactForceXObjective = 100000
+                    else:
+                       self.BestContactForceXObjective = max(acceptable_forces) 
+                    print("The Contact Force along X: "+str(self.BestContactForceXObjective))
+                    self.objectives.append(self.BestContactForceXObjective)
+
 
                 # Norm of the Contact Force
                 if "ContactForceNorm" == current_objective_name:
-                    self.forceContactN = (forceX**2+forceY**2+forceZ**2)**0.5 
+                    self.forceContactN = (self.forceX**2+self.forceY**2+self.forceZ**2)**0.5 
                     print("Norm of the Contact Force: "+str(self.forceContactN))
                     self.objectives.append(self.forceContactN)
 
@@ -259,6 +260,41 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print("Contact Force along X-axis: " + str(self.forceContactX))
                     print("Force Transmission along X-axis: "+ str(self.forceTransmissionX))
                     self.objectives.append(self.forceTransmissionX)
+
+                # Best Force Transmission along X-axis evaluated for several angular positions
+                # It is the best ratio between the necessary Motor Torque and the resulting gripping force along X-axis 
+                # It is evaluated under the constraint of maximum force exerted by the servomotor.
+                if "IncrementalForceTransmissionX" == current_objective_name:
+                    acceptable_transmissions = [abs(self.list_force_X[i]) / abs(self.int_interval_torques[i][0])
+                                                      for i in range(len(self.int_interval_torques))
+                                                      if self.list_force_X[i] != 0 # Remove case where there is no contact 
+                                                      and abs(self.int_interval_torques[i][0]) <=  MAX_SERVO] # Remove unreachable state because of hardware limitations
+                    if len(acceptable_transmissions) == 0:
+                        self.BestForceTransmissionXObjective = 1
+                    else:
+                        self.BestForceTransmissionXObjective = 1 / max(acceptable_transmissions) 
+
+                    print("Herkulex limit met at iter", len(acceptable_transmissions), "out of", len(self.list_force_X), "iters.")
+                    # print("Force Transmission Candidates: ", acceptable_transmissions)
+                    # print("Objective Force Transmission Candidates: ", [ 1 / acceptable_transmissions[i] for i in range(len(acceptable_transmissions))])
+                    print("Objective Force Transmission along X-axis: "+ str(self.BestForceTransmissionXObjective))
+                    self.objectives.append(self.BestForceTransmissionXObjective)
+
+                # Metric for evaluating the energy needed for performing a grasp
+                # The total electric energy is directly proportional to the generated couples on the finger 
+                # in our setup as we sample both with fixed angle and time steps
+                if "GraspingEnergy" == current_objective_name:
+                    mechanical_works = [abs(self.int_interval_torques[i][0]) * abs(self.target_angles[i])  
+                                                      for i in range(len(self.int_interval_torques))
+                                                      if abs(self.int_interval_torques[i][0]) <=  MAX_SERVO] # Remove unreachable state because of hardware limitations
+                    if len(mechanical_works) == 0:
+                        self.GraspingEnergy = 0
+                    else:
+                        self.GraspingEnergy = sum(mechanical_works)
+
+                    print("Objective Grasping Energy: ", self.GraspingEnergy)
+                    self.objectives.append(self.GraspingEnergy)
+
 
                 # Penalise interpenetration of soft finger with object in the scene at end of simulation
                 if "InterpenetrationPenaltyEndX" == current_objective_name:
@@ -303,8 +339,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     self.contactForceXLocationPenalty = 0
                     sum_forceX = 0
                     for id in idx_collision_finger_object:
-                        norm = (constraints_data[id][0]**2+constraints_data[id][1]**2+constraints_data[id][2]**2)**0.5 
-                        curr_forceX = abs(1/norm*contactForces[id]*constraints_data[id][0]) / self.rootNode.dt.value
+                        norm = (self.constraints_data[id][0]**2+self.constraints_data[id][1]**2+self.constraints_data[id][2]**2)**0.5 
+                        curr_forceX = abs(1/norm*self.contactForces[id]*self.constraints_data[id][0]) / self.rootNode.dt.value
                         self.contactForceXLocationPenalty += (abs(TARGET[2] - collision_coordinates[id][2]) - THRESHOLD) * curr_forceX
                         sum_forceX += curr_forceX
 
@@ -357,6 +393,37 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value
         theta = self.actuator.ServoMotor.Articulation.dofs.position.value
         return k * (theta - theta_0)
+    
+    def evaluate_forces(self):
+        # Compute the force exerted on an object
+        self.contactForces = self.rootNode.getRoot().GenericConstraintSolver.constraintForces.value
+        constraint= self.rootNode.Modelling.Obstacle.Cylinder.collision.MechanicalObject.constraint.value.split('\n')[0:-1]
+        indices_constraint=[]
+        self.numContact=len(constraint)
+        self.forceContactX=0
+        self.forceX,self.forceY,self.forceZ=0,0,0
+        
+        for i in range(len(constraint)):
+            indices_constraint.append([int(constraint[i].split(' ')[0]),float(constraint[i].split(' ')[3]),float(constraint[i].split(' ')[4]),float(constraint[i].split(' ')[5])])
+            norm=(indices_constraint[i][1]**2+indices_constraint[i][2]**2+indices_constraint[i][3]**2)**0.5
+            ###### Evaluate the normal force
+            self.forceContactX += 1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][1] 
+            ####### Evaluate force norm
+            self.forceX+=1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
+            self.forceY+=1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][2]
+            self.forceZ+=1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][3]
+        
+        # In SOFA, force*dt is stored in lambda vectors for ease of use. 
+        # We remove the dt part for obtaining only the force
+        self.forceContactX /= self.rootNode.dt.value
+        self.forceX /= self.rootNode.dt.value 
+        self.forceY /= self.rootNode.dt.value
+        self.forceZ /= self.rootNode.dt.value
+
+        # Build dict of constraint data from solver
+        self.constraints_data = {}
+        for constraint in indices_constraint:
+            self.constraints_data[constraint[0]] = constraint[1:]
     
     def check_interpenetrationX(self, coords_0, coords_1):
         """
@@ -450,7 +517,7 @@ def createScene(rootNode, config):
     frictionCoef=0.05
     rootNode.addObject('RuleBasedContactManager', responseParams="mu="+str(frictionCoef),
                                                     name='Response', response='FrictionContactConstraint')#frictionCoef=0.1
-    rootNode.addObject('LocalMinDistance',alarmDistance=5e-3, contactDistance=0.1e-3, angleCone=0.01)
+    rootNode.addObject('LocalMinDistance',alarmDistance=5e-3, contactDistance=0.5e-3, angleCone=0.01)
     
     # Set up the pipeline for the collision and mechanics computation
     rootNode.addObject('GenericConstraintSolver', tolerance="1e-6", maxIterations="10000")
@@ -500,10 +567,10 @@ def createScene(rootNode, config):
         # The most positive x side of the finger is located at x = 3mm, and the radius of the obstacle is 5mm
         # So to be at 30mm from the finger, the obstacle center should be at x = 3 + 30 + 5 mm
         # distanceObject represents the 3 + 30 mm
-        cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[config.distanceObject+5.0e-3, 0.0, 80.0e-3],
+        cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[config.distanceObject+5.0e-3, 0.0, 30.0e-3],
                             surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/cylinder.stl',
                             MOscale=10e-3,
-                            uniformScale=0.5,
+                            uniformScale=1.0,
                             totalMass=0.032,
                             isAStaticObject=True)
         cylObst.mass.showAxisSizeFactor = 1e-2

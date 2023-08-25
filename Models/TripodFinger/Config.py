@@ -22,9 +22,10 @@ class Config(GmshDesignOptimization):
         super(GmshDesignOptimization,self).__init__("TripodFinger")
         
     def init_model_parameters(self):
-        # Specify if we have an object in the scene
-        self.use_object = True
-
+        # Specific scene parameters
+        self.use_object = True # Specify if we have an object in the scene
+        self.n_target_angles = 8 # Number of intermediate angle objectives - Increasing this number is usefull for couple servoing
+        
         # Conversion to mm
         self.mm = 1e-3
 
