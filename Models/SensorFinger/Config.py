@@ -87,16 +87,13 @@ class Config(GmshDesignOptimization):
         "CavityCorkThickness": [self.CavityCorkThickness, 2.0, 5.0],
         "PlateauHeight": [self.PlateauHeight, 2.0, 4.0]
         }
-
+               
     def get_objective_data(self):
         return {"PressureSensibility": ["maximize", 80],
-        "VolumeSensibility":["maximize", 80],
-        "VolumeSensibilityV2":["maximize", 80],
-        "InitialVolume": ["maximize", 2],
         "AbsoluteBendingAngle": ["maximize", 80],}
 
     def get_assessed_together_objectives(self):
-        return [["VolumeSensibility", "AbsoluteBendingAngle", "InitialVolume"]]
+        return [["PressureSensibility", "AbsoluteBendingAngle"]]
 
     def set_design_variables(self, new_values):
         super(Config,self).set_design_variables(new_values)

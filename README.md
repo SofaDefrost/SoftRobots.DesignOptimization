@@ -60,17 +60,17 @@ In this section we introduce the main commands for using the toolbox with the Se
 ### Testing a baseline SOFA scene
 For running a parametric scene without optimization, the following command is available:
 ```bash
-python3 main.py -n SensorFinger -rp 0 -sd -so ba 
+python3 main.py -n SensorFinger -op 0 -sd -so ba 
 ```
 - -n, --name: name of the soft robot.
-- -rp, --reduced_problem: reference to a reduced configuration of a soft robot. For a same soft robot, several reduced configurations can be implemented considering different design variables or optimization objectives.
+- -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives.
 - -sd, --simulate_design: call to the simulation script in the SOFA GUI
 - -so, --simulation_option: simulation option. For baseline simulation, we have to specify the option "ba" [Optional, default=ba]
 
 ### Sensitivity Analysis 
 Running a sensitivity analysis for measuring the local impact of each design variable on the optimization objectives is performed through:
 ```bash
-python3 main.py -n SensorFinger -rp 0 -sa -nsa 2
+python3 main.py -n SensorFinger -op 0 -sa -nsa 2
 ```
 - -sa, --sensitivity_analysis: call to the sensitivity analysis script
 - -nsa, --n_samples_per_param: Number of point to sample for each design variable [Optional, default=2]
@@ -78,7 +78,7 @@ python3 main.py -n SensorFinger -rp 0 -sa -nsa 2
 ### Design Optimization
 Design optimization of a parametric design is launched using:
 ```bash
-python3 main.py -n SensorFinger -rp 0 -o -ni 100
+python3 main.py -n SensorFinger -op 0 -o -ni 100
 ```
 - -o, --optimization: call to the design optimization script
 - -ni, --n_iter: Number of design optimization iterations [Optional, default=10]
@@ -90,7 +90,7 @@ The number of design optimization iterations "ni" provided is then the number of
 ### Simulate a Design obtained through Optimization
 For selecting and visualizing any design encountered during design optimization in the SOFA GUI, consider the following command: 
 ```bash
-python3 main.py -n SensorFinger -rp 0 -sd -so fo
+python3 main.py -n SensorFinger -op 0 -sd -so fo
 ```
 - -so, --simulation_option: simulation option. For choosing a specific design encountered during design optimization, we have to specify the option "fo" [Optional, default=ba]
 
@@ -103,6 +103,8 @@ Once launched, a command prompt will ask you the id of the design to simulate.
 The Sensorized Finger is a cable actuated soft finger with pneumatic chambers located at the joints. This chambers are used as sensors. The measurement of their volume change enables finding the Sensorized Finger actuation state through inverse modeling. The robot parameterization as well as our results are described in this [article](https://arxiv.org/pdf/2304.07260.pdf). We also provide scripts for automatic mold generation for manufacturing any optimized robot.
 
 ![Alt text](/images/SensorizedFingerOverview.png)
+
+As the work on the toolbox is still in progress, there may have slight changes with the results form the article. 
 
 
 # Citing

@@ -7,9 +7,9 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2020, Inria"
 __date__ = "Oct 28 2022"
 
-import random
 import os
-
+import multiprocessing
+import time
 
 class BaseConfig(object):
 
@@ -257,31 +257,45 @@ class GmshDesignOptimization(BaseConfig):
         full_filename: string
             The full path to the generated mesh.
         """
-        self.manage_temporary_directories()
-        gmsh.initialize()
-        # Silence gmsh so by default nothing is printed
-        gmsh.option.setNumber("General.Terminal", 0)
-        id = generating_function(**kwargs)
-        gmsh.model.occ.synchronize()
-        filename = self.get_unique_filename(generating_function)
-        if mode == "Step":
-            full_filename = os.path.join(self.meshes_path, filename+".step") 
-        elif mode == "Surface":
-            full_filename = os.path.join(self.meshes_path, filename+"_surface.stl")   
-        elif mode == "Volume":
-            full_filename = os.path.join(self.meshes_path, filename+"_volume.vtk") 
-        if not os.path.exists(full_filename):
-            # When we are generating the mesh, it is better to know something is happening so let's reactive the printed messages
-            gmsh.option.setNumber("General.Terminal", 1)
-            if mode == "Surface":
-                gmsh.model.mesh.generate(2)
+        
+        # Main function
+        def _get_mesh_filename(mode, refine, generating_function, **kwargs):
+            self.manage_temporary_directories()
+            gmsh.initialize()
+            # Silence gmsh so by default nothing is printed
+            gmsh.option.setNumber("General.Terminal", 0)
+            id = generating_function(**kwargs)
+            # id = self.run_with_timeout(generating_function, kwargs, 15)
+            gmsh.model.occ.synchronize()
+            filename = self.get_unique_filename(generating_function)
+            if mode == "Step":
+                full_filename = os.path.join(self.meshes_path, filename+".step") 
+            elif mode == "Surface":
+                full_filename = os.path.join(self.meshes_path, filename+"_surface.stl")   
             elif mode == "Volume":
-                gmsh.model.mesh.generate(3)
-            if refine:
-                gmsh.model.mesh.refine()
-            gmsh.write(full_filename)
-        gmsh.finalize()
-        return full_filename
+                full_filename = os.path.join(self.meshes_path, filename+"_volume.vtk") 
+            if not os.path.exists(full_filename):
+                # When we are generating the mesh, it is better to know something is happening so let's reactive the printed messages
+                gmsh.option.setNumber("General.Terminal", 1)
+                if mode == "Surface":
+                    gmsh.model.mesh.generate(2)
+                elif mode == "Volume":
+                    gmsh.model.mesh.generate(3)
+                if refine:
+                    gmsh.model.mesh.refine()
+                gmsh.write(full_filename)
+            gmsh.finalize()
+            return full_filename
+
+        # Cancel the process if it takes too much time
+        args = {
+            "mode": mode,
+            "refine": refine,
+            "generating_function": generating_function,
+        }
+        combined_args = {**args, **kwargs}
+        return self.run_with_timeout(_get_mesh_filename, combined_args, 10)
+
     
     def save(self, source_filename, as_filename):
         """
@@ -318,4 +332,38 @@ class GmshDesignOptimization(BaseConfig):
         gmsh.fltk.run()
         gmsh.finalize()
 
+    #@staticmethod
+    def run_with_timeout(self, target_func, args, timeout):
+        """
+        Run a specified function and return an error if it takes too much time.
+        ----------
+        Inputs
+        ----------
+        target_func: func
+            The target function to monitor.
+        args: dict
+            Arguments for calling function target_func.
+        timeout: int
+            Maximum delay time.
+        """        
+        result_queue = multiprocessing.Queue()
+        
+        def target_with_result(queue):
+            result = target_func(**args)
+            queue.put(result)
+        
+        process = multiprocessing.Process(target = target_with_result, args = (result_queue,))
+        process.start()
+        process.join(timeout)
+        
+        # Limited time has been overcomed
+        if process.is_alive():
+            process.terminate()
+            process.join()
+            print("Shape generation takes too much time. The process is terminated.")
+            raise Exception 
+        else:
+            result = result_queue.get()
+            print("Shape generation went well.")
+            return result
         
