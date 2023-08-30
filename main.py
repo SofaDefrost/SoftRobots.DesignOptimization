@@ -29,7 +29,7 @@ def main(args=None):
 
     ### Choose model
     parser.add_argument('--name', '-n', help='Load a model: -n model_name')
-    parser.add_argument('--reduced_problem', '-rp', help='Identification number of the reduced problem for design optimization: -rp id.', default=None)
+    parser.add_argument('--optimization_problem', '-op', help='Identification number of the optimization problem for a given design: -op id.', default=None)
 
     ### Choose application and its parameters
 
@@ -66,15 +66,15 @@ def main(args=None):
     config_lib = importlib.import_module("Models."+ args.name+".Config")
     Config = config_lib.Config()
     id_config = None
-    if args.reduced_problem:
-        reduced_config_link = pathlib.Path(str(pathlib.Path(__file__).parent.absolute())+"/Models/"+ args.name+"/ReducedConfigs/Config_" + args.reduced_problem + ".py")
-        if pathlib.Path.exists(reduced_config_link):
-            print("Load reduced optimization config number " + args.reduced_problem)
-            reduced_config_lib = importlib.import_module("Models."+ args.name+".ReducedConfigs.Config_" + args.reduced_problem)
-            Config = reduced_config_lib.ReducedConfig()
-            id_config = args.reduced_problem
+    if args.optimization_problem:
+        optimization_config_link = pathlib.Path(str(pathlib.Path(__file__).parent.absolute())+"/Models/"+ args.name+"/OptimizationConfigs/Config_" + args.optimization_problem + ".py")
+        if pathlib.Path.exists(optimization_config_link):
+            print("Load optimization problem config number " + args.optimization_problem)
+            optimization_config_lib = importlib.import_module("Models."+ args.name+".OptimizationConfigs.Config_" + args.optimization_problem)
+            Config = optimization_config_lib.OptimizationConfig()
+            id_config = args.optimization_problem
         else:
-            print("Please enter an existing reduced config number. Loading base config instead.")
+            print("Please enter an existing optimization problem config number. Loading base config instead.")
     
     if args.solver_library not in implemented_solvers.keys():
             print("Please choose a valid solver library. Available solver library are " + str(list(implemented_solvers.keys())))

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for the SensorFinger with less design variables.
+"""Optimization config for the SensorFinger with less design variables.
 We optimise both for:
     - An absolute deflection angle.
     - A Volume Sensibility metric.
@@ -21,7 +21,7 @@ from Config import Config
 
 import numpy as np 
 
-class ReducedConfig(Config):
+class OptimizationConfig(Config):
 
     def get_design_variables(self):            
         return {

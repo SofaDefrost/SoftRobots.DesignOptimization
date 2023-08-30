@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for the SensorFinger with less design variables and with adjustable cable position depending on cavity size.
-We optimise both for:
+"""Optimization config for the SensorFinger with less design variables with adjustable cable position depending on cavity size.
+We optimise for:
     - An absolute deflection angle.
     - A Pressure Sensibility metric.
+    - The initial volume fo the cavity for avoiding obtaining non feasible design with too small cavities.
 """
+
 __authors__ = "tnavez"
 __contact__ = "tanguy.navez@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020, Inria"
-__date__ = "Nov 25 2022"
+__date__ = "Oct 28 2022"
 
 
 import sys
@@ -20,13 +22,7 @@ from Config import Config
 
 import numpy as np 
 
-class ReducedConfig(Config):
-
-    def __init__(self):
-        super(Config,self).__init__("SensorFinger")
-        self.lc_finger = 7
-        self.PoissonRation = 0.3
-
+class OptimizationConfig(Config):
 
     def get_design_variables(self):            
         return {
@@ -40,16 +36,16 @@ class ReducedConfig(Config):
         }
 
     def get_objective_data(self):
-        return {"PressureSensibility":["maximize", 80],
-            "AbsoluteBendingAngle": ["maximize", 80],}
+        return {"InitialVolume": ["maximize", 2],
+        "PressureSensibility": ["maximize", 80],
+        "AbsoluteBendingAngle": ["maximize", 80],}
 
     def get_assessed_together_objectives(self):
-        return [["PressureSensibility", "AbsoluteBendingAngle"]]
+        return [["PressureSensibility", "AbsoluteBendingAngle", "InitialVolume"]]
     
     def set_design_variables(self, new_values):
-        super(ReducedConfig,self).set_design_variables(new_values)
-        self.CableHeight = self.OuterRadius + 1.0
-
+        super(OptimizationConfig,self).set_design_variables(new_values)
+        self.CableHeight = self.OuterRadius + 0.8
 
     
     

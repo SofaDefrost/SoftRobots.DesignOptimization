@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for the SensorFinger with less design variables.
+"""Optimization config for the SensorFinger with less design variables and with adjustable cable position depending on cavity size.
+Compared to optimization problem config 3, the used Poisson ratio and Finger mesh density are set respectively to 0.45 (instead of 0.3) and 3 (instead of 7).
+The objective is to compare results obtained with this setting to see if mechanical parameters / mesh refinement impact greatly the results.
 We optimise both for:
     - An absolute deflection angle.
-    - An altered Volume Sensibility metric for avoiding obtaining non feasible design with too small cavities
+    - A Volume Sensibility metric.
 """
 
 __authors__ = "tnavez"
 __contact__ = "tanguy.navez@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020, Inria"
-__date__ = "Oct 28 2022"
+__date__ = "Nov 25 2022"
 
 
 import sys
@@ -21,7 +23,13 @@ from Config import Config
 
 import numpy as np 
 
-class ReducedConfig(Config):
+class OptimizationConfig(Config):
+
+    def __init__(self):
+        super().__init__()
+        self.lc_finger = 3
+        self.PoissonRation = 0.45
+
 
     def get_design_variables(self):            
         return {
@@ -35,12 +43,15 @@ class ReducedConfig(Config):
         }
 
     def get_objective_data(self):
-        return {"PenalizedVolumeSensibility":["maximize", 80],
+        return {"VolumeSensibility":["maximize", 80],
             "AbsoluteBendingAngle": ["maximize", 80],}
 
     def get_assessed_together_objectives(self):
-        return [["PenalizedVolumeSensibility", "AbsoluteBendingAngle"]]
+        return [["VolumeSensibility", "AbsoluteBendingAngle"]]
     
+    def set_design_variables(self, new_values):
+        super(OptimizationConfig,self).set_design_variables(new_values)
+        self.CableHeight = self.OuterRadius + 0.8
 
 
     

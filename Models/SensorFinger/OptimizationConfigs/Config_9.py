@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for the SensorFinger with less design variables and with adjustable cable position depending on cavity size.
-Compared to reduced config 3, the used Poisson ratio and Finger mesh density are set respectively to 0.45 (instead of 0.3) and 3 (instead of 7).
-The objective is to compare results obtained with this setting to see if mechanical parameters / mesh refinement impact greatly the results.
+"""Optimization config for the SensorFinger with less design variables and with adjustable cable position depending on cavity size.
+Goal is to analyse sensitivity of fitness functions regarding all parameterization design variables.
 We optimise both for:
     - An absolute deflection angle.
     - A Volume Sensibility metric.
 """
-
 __authors__ = "tnavez"
 __contact__ = "tanguy.navez@inria.fr"
 __version__ = "1.0.0"
@@ -23,22 +21,19 @@ from Config import Config
 
 import numpy as np 
 
-class ReducedConfig(Config):
-
-    def __init__(self):
-        super(Config,self).__init__("SensorFinger")
-        self.lc_finger = 3
-        self.PoissonRation = 0.45
-
+class OptimizationConfig(Config):
 
     def get_design_variables(self):            
         return {
-        "JointSlopeAngle": [self.JointSlopeAngle, np.deg2rad(10), np.deg2rad(60)],   
-        "OuterRadius": [self.OuterRadius, self.Thickness/2.0, self.Thickness/2.0 + 9.0],
         "JointHeight": [self.JointHeight, 5.0, 8.0],
-        "CavityCorkThickness": [self.CavityCorkThickness, 2.0, 5.0],
+        "JointSlopeAngle": [self.JointSlopeAngle, np.deg2rad(10), np.deg2rad(60)],
+        "FixationWidth": [self.FixationWidth, 2.5, 3.5],      
+        "OuterRadius": [self.OuterRadius, self.Thickness/2.0, self.Thickness/2.0 + 9.0], 
         "BellowHeight": [self.BellowHeight, 6.0, 10.0],
+        "TeethRadius": [self.TeethRadius, self.Thickness/2 - 1.0, self.Thickness/2 + 1.0],
         "WallThickness": [self.WallThickness, 2.0, 4.0],
+        "CenterThickness": [self.CenterThickness, 1.0, 4.0],
+        "CavityCorkThickness": [self.CavityCorkThickness, 2.0, 5.0],
         "PlateauHeight": [self.PlateauHeight, 2.0, 4.0]
         }
 
@@ -50,7 +45,7 @@ class ReducedConfig(Config):
         return [["VolumeSensibility", "AbsoluteBendingAngle"]]
     
     def set_design_variables(self, new_values):
-        super(ReducedConfig,self).set_design_variables(new_values)
+        super(OptimizationConfig,self).set_design_variables(new_values)
         self.CableHeight = self.OuterRadius + 0.8
 
 

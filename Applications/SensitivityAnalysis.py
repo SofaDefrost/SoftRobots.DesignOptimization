@@ -48,7 +48,7 @@ def analyse_sensitivity(config, id_config, n_samples_per_param, method = "OAaT",
     if id_config == None:
         config_lib = importlib.import_module("Models."+ config.model_name +".Config")
     else:
-        config_lib = importlib.import_module("Models."+ config.model_name + ".ReducedConfigs.Config_" + str(id_config))   
+        config_lib = importlib.import_module("Models."+ config.model_name + ".OptimizationConfigs.Config_" + str(id_config))   
     config.set_cache_mode(in_optimization_loop = True)
 
     # Simulation
@@ -76,7 +76,7 @@ def analyse_sensitivity(config, id_config, n_samples_per_param, method = "OAaT",
             if id_config == None:
                 config = config_lib.Config() 
             else:
-                config = config_lib.ReducedConfig()
+                config = config_lib.OptimizationConfig()
             var_samples = list(np.linspace(design_variables[name_var][1], design_variables[name_var][2], n_samples_per_param))
             objectives_var = []
              # Compute objective for each sampled var
@@ -189,7 +189,7 @@ def analyse_sensitivity(config, id_config, n_samples_per_param, method = "OAaT",
             if id_config == None:
                 config = config_lib.Config() 
             else:
-                config = config_lib.ReducedConfig() 
+                config = config_lib.OptimizationConfig() 
             var_samples = list(np.linspace(design_variables[name_var][1], design_variables[name_var][2], n_samples_per_param))
             vars_samples.append(var_samples)
         combination_vars = [list(x) for x in np.array(np.meshgrid(*vars_samples)).T.reshape(-1,len(vars_samples))]

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for the SensorFinger with less design variables and with adjustable cable position depending on cavity size.
-Compared to reduced config 3, the cable is a bit further away from cavity for ensuring fabrication is possible.
+"""Optimization config for the SensorFinger with less design variables and with adjustable cable position depending on cavity size.
 We optimise both for:
     - An absolute deflection angle.
     - A Volume Sensibility metric.
@@ -21,13 +20,7 @@ from Config import Config
 
 import numpy as np 
 
-class ReducedConfig(Config):
-
-    def __init__(self):
-        super(Config,self).__init__("SensorFinger")
-        self.lc_finger = 7
-        self.PoissonRation = 0.45
-
+class OptimizationConfig(Config):
 
     def get_design_variables(self):            
         return {
@@ -48,8 +41,8 @@ class ReducedConfig(Config):
         return [["VolumeSensibility", "AbsoluteBendingAngle"]]
     
     def set_design_variables(self, new_values):
-        super(ReducedConfig,self).set_design_variables(new_values)
-        self.CableHeight = self.OuterRadius + 1.0
+        super(OptimizationConfig,self).set_design_variables(new_values)
+        self.CableHeight = self.OuterRadius + 0.8
 
 
     

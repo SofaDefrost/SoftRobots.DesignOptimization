@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Reduced config for simulating the prototyped Finger for RAL-2023."""
+"""Optimization config for simulating the prototyped Finger for RAL-2023."""
 
-"""Reduced config for simulating the prototyped SensorFinger with less design variables and with adjustable cable position depending on cavity size.
+"""Optimization config for simulating the prototyped SensorFinger with less design variables and with adjustable cable position depending on cavity size.
 We prototyped two designs from the Pareto Front of reduce config 3. 
-Compared to reduced config 3:
+Compared to Optimization config 3:
     - The used Poisson ratio is set to 0.495 (instead of 0.3) 
     - The mesh is thinner around cavities for ensuring having a better precision on the measure of the Volume Sensibility.
-This reduced config also enables sensitivity analysis around prototyped Sensor Finger for design parameters calibration purpose.
+This Optimization config also enables sensitivity analysis around prototyped Sensor Finger for design parameters calibration purpose.
 """
 
 __authors__ = "tnavez"
@@ -27,10 +27,10 @@ import numpy as np
 
 mode = "SENSOR"
 
-class ReducedConfig(Config):
+class OptimizationConfig(Config):
 
     def __init__(self):
-        super(Config,self).__init__("SensorFinger")
+        super().__init__()
         if mode == "SENSOR":
             self.BellowHeight =  13
             self.OuterRadius = 17.522
@@ -75,7 +75,7 @@ class ReducedConfig(Config):
          }
 
     def set_design_variables(self, new_values):
-        super(ReducedConfig,self).set_design_variables(new_values)
+        super(OptimizationConfig,self).set_design_variables(new_values)
         self.CableHeight = self.OuterRadius + 1.0
 
     
