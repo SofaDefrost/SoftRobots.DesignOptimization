@@ -82,7 +82,7 @@ Design optimization of a parametric design is launched using:
 python3 main.py -n SensorFinger -op 0 -o -ni 100
 ```
 - -n, --name: see above
-- - -op, --optimization_problem: see above
+- -op, --optimization_problem: see above
 - -o, --optimization: call to the design optimization script
 - -ni, --n_iter: Number of design optimization iterations [Optional, default=10]
 
