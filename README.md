@@ -63,7 +63,7 @@ For running a parametric scene without optimization, the following command is av
 python3 main.py -n SensorFinger -op 0 -sd -so ba 
 ```
 - -n, --name: name of the soft robot.
-- -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives.
+- -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives. In the case of the SoftFinger, the available optimization configurations are found in the subfolder "/Models/SensorFinger/OptimizationConfigs/".
 - -sd, --simulate_design: call to the simulation script in the SOFA GUI
 - -so, --simulation_option: simulation option. For baseline simulation, we have to specify the option "ba" [Optional, default=ba]
 
@@ -72,6 +72,8 @@ Running a sensitivity analysis for measuring the local impact of each design var
 ```bash
 python3 main.py -n SensorFinger -op 0 -sa -nsa 2
 ```
+- -n, --name: name of the soft robot.
+- -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives. 
 - -sa, --sensitivity_analysis: call to the sensitivity analysis script
 - -nsa, --n_samples_per_param: Number of point to sample for each design variable [Optional, default=2]
 
