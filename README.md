@@ -71,7 +71,7 @@ Running a sensitivity analysis for measuring the local impact of each design var
 ```bash
 python3 main.py -n SensorFinger -op 0 -sa -nsa 2
 ```
-- -n, --name: name of the soft robot.
+- -n, --name: see above
 - -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives. In the case of the SoftFinger, the available optimization configurations are found in the subfolder "Models/SensorFinger/OptimizationConfigs/". If you select a non-existing configuration, the script will run with a default value.
 - -sa, --sensitivity_analysis: call to the sensitivity analysis script
 - -nsa, --n_samples_per_param: Number of point to sample for each design variable [Optional, default=2]
@@ -81,6 +81,8 @@ Design optimization of a parametric design is launched using:
 ```bash
 python3 main.py -n SensorFinger -op 0 -o -ni 100
 ```
+- -n, --name: see above
+- - -op, --optimization_problem: see above
 - -o, --optimization: call to the design optimization script
 - -ni, --n_iter: Number of design optimization iterations [Optional, default=10]
 
