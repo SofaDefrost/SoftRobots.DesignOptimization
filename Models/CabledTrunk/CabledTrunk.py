@@ -16,7 +16,7 @@ import Sofa
 
 from BaseFitnessEvaluationController import BaseFitnessEvaluationController
 
-from Generation import Trunk
+from Generation import Trunk, Corridor
 
 class FitnessEvaluationController(BaseFitnessEvaluationController):   
     
@@ -26,17 +26,34 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         super(FitnessEvaluationController,self).__init__(*args, **kwargs)
         self.actuator = kwargs['actuator'] 
+        self.goal_positions = kwargs["goal_positions"]
 
         # Objective evaluation variables
         self.current_iter = 0
         current_objectives = self.config.get_currently_assessed_objectives()
         
+        # Init time counter
+        self.current_iter = 0
         self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])
-
+        
+        n_int_goals = len(self.goal_positions)
+        self.goal_steps = int(self.max_iter / n_int_goals)
+        self.current_goal_id = 0
 
     def onAnimateBeginEvent(self, dt):
         self.current_iter += 1
 
+        #######################################
+        ### Regularly update goal positions ###
+        #######################################
+        if self.current_goal_id+1 < len(self.goal_positions) - 1:
+            if self.current_iter == (self.current_goal_id+1) * self.goal_steps:
+                self.current_goal_id += 1 
+                self.rootNode.Targets.dofs.position.value = self.goal_positions[self.current_goal_id+1]
+
+        #################################################
+        ### Compute objective when simulation is done ###
+        #################################################
         if self.current_iter == self.max_iter:
 
             current_objectives_name = self.config.get_currently_assessed_objectives()   
@@ -50,6 +67,10 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print("Matching metric:", self.ShapeMatchingMetric)
                     self.objectives.append(self.ShapeMatchingMetric)
 
+                if "ReachTargetInTShape" == current_objective_name:
+                    self.ReachTargetInTShape = self.rootNode.QPInverseProblemSolver.objective.value
+                    print("Matching metric:", self.ReachTargetInTShape)
+                    self.objectives.append(self.ReachTargetInTShape)
 
 
 def createScene(rootNode, config):
@@ -96,7 +117,7 @@ def createScene(rootNode, config):
         rootNode.addObject('BruteForceBroadPhase')
         rootNode.addObject('BVHNarrowPhase')
         rootNode.addObject('DefaultContactManager', name="CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.8")
-        rootNode.addObject('LocalMinDistance', alarmDistance=0.8e-3, contactDistance=0.1e-3, angleCone=0.02)
+        rootNode.addObject('LocalMinDistance', alarmDistance=0.8e-3, contactDistance=0.2e-3, angleCone=0.02)
 
     if config.inverse_mode:
         if config.use_contact:
@@ -181,10 +202,26 @@ def createScene(rootNode, config):
     ########################
     ### Collision Model ####
     ######################## 
+    corridor_directions = ["x+y", "y+z", "x-y", "y-z"]
+    corridor_plane =  corridor_directions[1] # Pick the direction of the obstacle
+    gap, offset = 0.005, 0.005
+    if corridor_plane == "x+y":
+        scaling_corridor = [gap, 0.0600, 2/3 * config.total_length] 
+        translation_corridor = [0.016, -scaling_corridor[1]/2, -offset]
+    elif corridor_plane == "y+z":
+        scaling_corridor = [0.0600, gap, 2/3 * config.total_length] 
+        translation_corridor = [-scaling_corridor[0]/2, gap + config.r_in, -offset]
+    elif corridor_plane == "x-y":
+        scaling_corridor = [-gap, 0.0600, 2/3 * config.total_length] 
+        translation_corridor = [- 0.016, -scaling_corridor[1]/2, -offset]
+    elif corridor_plane == "y-z":
+        scaling_corridor = [0.0600, -gap, 2/3 * config.total_length] 
+        translation_corridor = [-scaling_corridor[0]/2, -gap - config.r_in, -offset]
+
     if config.use_contact:
         # Trunk collision model
         contacts_trunk = trunk.addChild("CollisionModel")
-        contacts_trunk.addObject('MeshSTLLoader', name='loader', filename= config.get_mesh_filename(mode = "Surface", refine = 0, 
+        contacts_trunk.addObject('MeshSTLLoader', name='loader', filename= config.get_mesh_filename(mode = "Surface", refine = 1, 
                                                         generating_function = Trunk, 
                                                         n_modules = config.n_modules,
                                                         r_ext = config.r_ext, d_ext = config.d_ext, r_in = config.r_in, d_in = config.d_in,
@@ -192,41 +229,31 @@ def createScene(rootNode, config):
                                                         d_mspace = config.d_mspace, is_collision = True))
         contacts_trunk.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
         contacts_trunk.addObject('MechanicalObject')
-        contacts_trunk.addObject('TriangleCollisionModel', group=1)
-        contacts_trunk.addObject('LineCollisionModel', group=1)
+        # contacts_trunk.addObject('TriangleCollisionModel', group=1)
+        # contacts_trunk.addObject('LineCollisionModel', group=1)
         contacts_trunk.addObject('PointCollisionModel', group=1)
         contacts_trunk.addObject('BarycentricMapping')
 
         # Add corridor
-        corridor = simulation.addChild("Corridor")
-        scaling = [0.001, 0.0600, 2/3 * config.total_length] # Corridor in plane y-z, x being positive
+        corridor = simulation.addChild("Corridor")        
         corridor.addObject('MechanicalObject', template="Rigid3", scale="0.001", dx="0.0", dy="0.0", dz="0.0")
         #corridor.addObject("UniformMass", totalMass = 100.0)
         corridor.addObject('RestShapeSpringsForceField', stiffness=1e10)
         
 
         contacts_corridor = corridor.addChild("CollisionModel")
-        contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
-                           scale3d = scaling, translation = [0.016, -scaling[1]/2, -0.005])
+        # contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
+        #                    scale3d = scaling_corridor, translation = translation_corridor)
+        contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = config.get_mesh_filename(mode = "Surface", refine = 2, 
+                                                        generating_function = Corridor, x_scaling = scaling_corridor[0], 
+                                                        y_scaling = scaling_corridor[1], z_scaling = scaling_corridor[2]),
+                           translation = translation_corridor)
         contacts_corridor.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
         contacts_corridor.addObject('MechanicalObject', name='dofs', template='Vec3')
         contacts_corridor.addObject('TriangleCollisionModel')
-        #contacts_corridor.addObject('LineCollisionModel')
-        #contacts_corridor.addObject('PointCollisionModel')
+        # contacts_corridor.addObject('LineCollisionModel')
+        # contacts_corridor.addObject('PointCollisionModel')
         contacts_corridor.addObject('RigidMapping')
-
-
-        # corridor = simulation.addChild("Corridor")
-        # scaling = [0.001, 0.0600, 2/3 * config.total_length] # Corridor in plane y-z, x being positive
-        # corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
-        #                    scale3d = scaling, translation = [0.016, -scaling[1]/2, -0.005])
-        # corridor.addObject('MeshTopology', src='@loader', name='container')
-        # corridor.addObject('MechanicalObject', name='dofs', template='Vec3')
-
-        # contacts_corridor = corridor.addChild("CollisionModel")
-        # contacts_corridor.addObject('TriangleCollisionModel', group=2)
-        # contacts_corridor.addObject('LineCollisionModel', group=2)
-        # contacts_corridor.addObject('PointCollisionModel', group=2)
 
     ##################
     ### Add cables ###
@@ -263,7 +290,8 @@ def createScene(rootNode, config):
         cable.addObject('CableConstraint' if not config.inverse_mode else 'CableActuator', template='Vec3', name='cable',
                                 pullPoint = pull_points[c],
                                 indices=list(range(0, final_module - 1)),
-                                maxPositiveDisp= 100,
+                                maxPositiveDisp= 100e-3,
+                                maxDispVariation = 10e-3,
                                 minForce=0)
         cable.addObject('BarycentricMapping', name='mapping', mapForces=False, mapMasses=False)
 
@@ -308,16 +336,43 @@ def createScene(rootNode, config):
         if "ReachTargetInTShape" in current_objectives_name:
             if config.use_contact:
                 effector_positions = [[0, 0, trunk_length]]
-                goal_positions = [[trunk_length / 3, 0, 2/3 * trunk_length]]
+                n_samples = 20
+                if corridor_plane == "x+y":
+                    goal_positions = compute_intermediate_points(
+                        effector_positions[0],
+                        [trunk_length / 3, 0, 2/3 * trunk_length],
+                        n_samples)
+                elif corridor_plane == "y+z":
+                    goal_positions = compute_intermediate_points(
+                        effector_positions[0],
+                        [0, trunk_length / 3, 2/3 * trunk_length],
+                        n_samples)
+                elif corridor_plane == "x-y":
+                    goal_positions = compute_intermediate_points(
+                        effector_positions[0],
+                        [-trunk_length / 3, 0, 2/3 * trunk_length],
+                        n_samples)
+                elif corridor_plane == "y-z":
+                    goal_positions = compute_intermediate_points(
+                        effector_positions[0],
+                        [0, - trunk_length / 3, 2/3 * trunk_length],
+                        n_samples)
             else:
                 effector_positions = [[0, 0, 2/3 * trunk_length], [0, 0, trunk_length]]
-                goal_positions = [[0, 0, 2/3 * trunk_length], [trunk_length / 3, 0, 2/3 * trunk_length]]
+                if corridor_plane == "x+y":
+                    goal_positions = [[0, 0, 2/3 * trunk_length], [trunk_length / 3, 0, 2/3 * trunk_length]]
+                elif corridor_plane == "y+z":
+                    goal_positions = [[0, 0, 2/3 * trunk_length], [0, trunk_length / 3, 2/3 * trunk_length]]
+                elif corridor_plane == "x-y":
+                    goal_positions = [[0, 0, 2/3 * trunk_length], [-trunk_length / 3, 0, 2/3 * trunk_length]]
+                elif corridor_plane == "y-z":
+                    goal_positions = [[0, 0, 2/3 * trunk_length], [0, - trunk_length / 3, 2/3 * trunk_length]]
 
         # Goal
         target = rootNode.addChild('Targets')
         target.addObject('EulerImplicitSolver', firstOrder=True)
         target.addObject('CGLinearSolver', iterations=100, tolerance=1e-5, threshold=1e-5)
-        target.addObject('MechanicalObject', name='dofs', position=goal_positions, showObject=True, showObjectScale=1.0*config.mm, drawMode=2, showColor = "red")
+        target.addObject('MechanicalObject', name='dofs', position=goal_positions[0], showObject=True, showObjectScale=1.0*config.mm, drawMode=2, showColor = "red")
         target.addObject('UncoupledConstraintCorrection')
 
         # Effectors
@@ -329,12 +384,14 @@ def createScene(rootNode, config):
     ##################
     ### Controller ###                            
     ##################
-    rootNode.addObject(FitnessEvaluationController(name="FitnessEvaluationController", rootNode=rootNode, config=config, actuator=[]))
+    rootNode.addObject(FitnessEvaluationController(name="FitnessEvaluationController", rootNode=rootNode, config=config, actuator=[], goal_positions = goal_positions))
     
     return rootNode
 
 
-
+#############
+### UTILS ###                            
+#############
 def matching_scenario(name_scenario, length, n_samples):
     """
     Generate both effector and target points needed for a given matchign scenario.
@@ -459,6 +516,34 @@ def generate_shape(name_shape, length, n_samples):
             z = center[2] + side_length / 2 - (i+1) * step
             points.append([x,y,z])
 
-
-
     return points
+
+
+def compute_intermediate_points(init_point, end_point, n_points):
+    """
+    Interpolate for computing intermediate points between two coordinates.
+    ----------
+    Inputs
+    ----------
+    init_point: list of 3 floats
+        Starting point of the trajectory the trajectory.
+    end_point: list of 3 floats
+        End point of the trajectory the trajectory.
+    n_points: int
+        Number of sample points to generate along the trajectory.
+    ----------
+    Outputs
+    ----------
+    points: list of list of list of 3 floats
+        Sampled points describing along the trajectory.
+    """
+    intermediate_points = []
+    for i in range(1, n_points + 1):
+        alpha = i / (n_points + 1.0)  # Fraction between 0 and 1
+        intermediate_point = [[
+            init_point[0] + alpha * (end_point[0] - init_point[0]),
+            init_point[1] + alpha * (end_point[1] - init_point[1]),
+            init_point[2] + alpha * (end_point[2] - init_point[2])
+        ]]
+        intermediate_points.append(intermediate_point)
+    return intermediate_points

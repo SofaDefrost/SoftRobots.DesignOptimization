@@ -106,4 +106,9 @@ def Trunk(n_modules, r_ext, d_ext, r_in, d_in, min_radius_percent, min_module_si
 
 
 
-
+######################
+### Corridor plane ###
+######################
+def Corridor(x_scaling, y_scaling, z_scaling):    
+    box = gmsh.model.occ.addBox(0, 0, 0, x_scaling, y_scaling, z_scaling)  
+    return box

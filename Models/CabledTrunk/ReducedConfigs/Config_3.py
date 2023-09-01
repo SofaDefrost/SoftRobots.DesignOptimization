@@ -37,17 +37,16 @@ class ReducedConfig(Config):
         t = 40
         return {#"ShapeMatchingBigS": ["minimize", t]
                 #"ShapeMatchingL": ["minimize", t]
-                #"ShapeMatchingS": ["minimize", t]
-                "ShapeMatchingCircularObject": ["minimize", t]
+                "ShapeMatchingS": ["minimize", t],
+                # "ShapeMatchingCircularObject": ["minimize", t]
                 #"ShapeMatchingCubicObject": ["minimize", t]
         }
 
     def get_assessed_together_objectives(self):
         #return [["ShapeMatchingBigS"]]
         #return [["ShapeMatchingL"]]
-        #return [["ShapeMatchingS"]]
-        return [["ShapeMatchingCircularObject"]]
+        return [["ShapeMatchingS"]]
+        # return [["ShapeMatchingCircularObject"]]
         #return [["ShapeMatchingCubicObject"]]
-
     
     

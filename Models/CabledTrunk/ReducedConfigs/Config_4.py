@@ -27,7 +27,7 @@ class ReducedConfig(Config):
         # self.n_modules = 25
         # self.update_total_length()
 
-        self.n_cables = 3
+        self.var_cabled_modules =  2
         self.n_short_cables = 3 * (self.n_modules - 4) 
         
         self.end_each_short_cable = []
@@ -39,10 +39,12 @@ class ReducedConfig(Config):
 
         self.use_contact = True
 
+
     def get_objective_data(self):
         t = 40
         return {"ReachTargetInTShape": ["minimize", t]
         }
+    
 
     def get_assessed_together_objectives(self):
         return [["ReachTargetInTShape"]]
