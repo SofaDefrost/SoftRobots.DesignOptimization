@@ -202,21 +202,78 @@ def createScene(rootNode, config):
     ########################
     ### Collision Model ####
     ######################## 
-    corridor_directions = ["x+y", "y+z", "x-y", "y-z"]
-    corridor_plane =  corridor_directions[1] # Pick the direction of the obstacle
+    corridor_directions = ["x+y", "y+z", "x-y", "y-z",# Single corridor
+                           "Ty+z", "Ty+z_120a", "Ty+z_240a" # T-shape
+                           ]
+    corridor_plane =  corridor_directions[6] # Pick the direction of the obstacle
     gap, offset = 0.005, 0.005
+    # Simple corridors
     if corridor_plane == "x+y":
-        scaling_corridor = [gap, 0.0600, 2/3 * config.total_length] 
-        translation_corridor = [0.016, -scaling_corridor[1]/2, -offset]
+        scaling_corridor = [[gap, 0.0600, 2/3 * config.total_length]] 
+        translation_corridor = [[0.016, -scaling_corridor[0][1]/2, -offset]]
+        rotation_matrix = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
+
     elif corridor_plane == "y+z":
-        scaling_corridor = [0.0600, gap, 2/3 * config.total_length] 
-        translation_corridor = [-scaling_corridor[0]/2, gap + config.r_in, -offset]
+        scaling_corridor = [[0.0600, gap, 2/3 * config.total_length]] 
+        translation_corridor = [[-scaling_corridor[0][0]/2, gap + config.r_in, -offset]]
+        rotation_matrix = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
     elif corridor_plane == "x-y":
-        scaling_corridor = [-gap, 0.0600, 2/3 * config.total_length] 
-        translation_corridor = [- 0.016, -scaling_corridor[1]/2, -offset]
+        scaling_corridor = [[-gap, 0.0600, 2/3 * config.total_length]] 
+        translation_corridor = [[- 0.016, -scaling_corridor[0][1]/2, -offset]]
+        rotation_matrix = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
     elif corridor_plane == "y-z":
-        scaling_corridor = [0.0600, -gap, 2/3 * config.total_length] 
-        translation_corridor = [-scaling_corridor[0]/2, -gap - config.r_in, -offset]
+        scaling_corridor = [[0.0600, -gap, 2/3 * config.total_length]] 
+        translation_corridor = [[-scaling_corridor[0][0]/2, -gap - config.r_in, -offset]]
+        rotation_matrix = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
+
+    # T-shape
+    elif "T" in corridor_plane:
+        scaling_corridor = [
+                            # Top left part
+                            [0.0600, gap, 3/4 * config.total_length],
+                            [0.0600, 3/4 * config.total_length, gap],
+                            # Top right part
+                            [0.0600, gap, 3/4 * config.total_length], 
+                            [0.0600, 3/4 * config.total_length, gap],
+                            # Bottom part
+                            [0.0600, -gap, 2 * config.total_length]
+                            ]
+                            
+        translation_corridor = [
+                                # Top left part
+                                [-scaling_corridor[0][0]/2, gap + config.r_in, -offset],
+                                [-scaling_corridor[0][0]/2, gap + config.r_in, 3/4 * config.total_length - offset],
+                                # Top right part
+                                [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length -offset],
+                                [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length - offset],
+                                # Bottom part
+                                [-scaling_corridor[0][0]/2, -gap - config.r_in, -offset]
+                                ]
+
+        if corridor_plane == "Ty+z":
+            rotation_matrix = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
+        elif corridor_plane == "Ty+z_120a":
+            rotation_Z = 2.0944 # 120°
+            rotation_matrix = np.array([[math.cos(rotation_Z), -math.sin(rotation_Z), 0],
+                                    [math.sin(rotation_Z), math.cos(rotation_Z), 0],
+                                    [0, 0, 1]])
+        elif corridor_plane == "Ty+z_240a":
+            rotation_Z = 4.18879 # 240°
+            rotation_matrix = np.array([[math.cos(rotation_Z), -math.sin(rotation_Z), 0],
+                                    [math.sin(rotation_Z), math.cos(rotation_Z), 0],
+                                    [0, 0, 1]])    
+        
+
 
     if config.use_contact:
         # Trunk collision model
@@ -235,25 +292,36 @@ def createScene(rootNode, config):
         contacts_trunk.addObject('BarycentricMapping')
 
         # Add corridor
-        corridor = simulation.addChild("Corridor")        
-        corridor.addObject('MechanicalObject', template="Rigid3", scale="0.001", dx="0.0", dy="0.0", dz="0.0")
-        #corridor.addObject("UniformMass", totalMass = 100.0)
-        corridor.addObject('RestShapeSpringsForceField', stiffness=1e10)
-        
+        for i in range(len(scaling_corridor)):
+            corridor = simulation.addChild("Corridor_" + str(i))        
+            corridor.addObject('MechanicalObject', template="Rigid3", scale="0.001", dx="0.0", dy="0.0", dz="0.0")
+            #corridor.addObject("UniformMass", totalMass = 100.0)
+            corridor.addObject('RestShapeSpringsForceField', stiffness=1e10)
+            
 
-        contacts_corridor = corridor.addChild("CollisionModel")
-        # contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
-        #                    scale3d = scaling_corridor, translation = translation_corridor)
-        contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = config.get_mesh_filename(mode = "Surface", refine = 2, 
-                                                        generating_function = Corridor, x_scaling = scaling_corridor[0], 
-                                                        y_scaling = scaling_corridor[1], z_scaling = scaling_corridor[2]),
-                           translation = translation_corridor)
-        contacts_corridor.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
-        contacts_corridor.addObject('MechanicalObject', name='dofs', template='Vec3')
-        contacts_corridor.addObject('TriangleCollisionModel')
-        # contacts_corridor.addObject('LineCollisionModel')
-        # contacts_corridor.addObject('PointCollisionModel')
-        contacts_corridor.addObject('RigidMapping')
+            contacts_corridor = corridor.addChild("CollisionModel")
+            # contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = "Models/CabledTrunk/Meshes/Corridor/cube.stl",
+            #                    scale3d = scaling_corridor, translation = translation_corridor)
+            contacts_corridor.addObject('MeshSTLLoader', name='loader', filename = config.get_mesh_filename(mode = "Surface", refine = 2, 
+                                                            generating_function = Corridor, x_scaling = scaling_corridor[i][0], 
+                                                            y_scaling = scaling_corridor[i][1], z_scaling = scaling_corridor[i][2]),
+                            translation = translation_corridor[i])
+            contacts_corridor.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
+            corridor_MO = contacts_corridor.addObject('MechanicalObject', name='dofs', template='Vec3')
+            contacts_corridor.init()
+           
+           # Rotate points
+            rest_positions = list(corridor_MO.rest_position.value)
+            for i in range(len(rest_positions)):
+                position = rest_positions[i]
+                rotated_position = np.dot(rotation_matrix, position)
+                rest_positions[i] = rotated_position
+            corridor_MO.position.value = rest_positions
+
+            contacts_corridor.addObject('TriangleCollisionModel')
+            # contacts_corridor.addObject('LineCollisionModel')
+            # contacts_corridor.addObject('PointCollisionModel')
+            contacts_corridor.addObject('RigidMapping')
 
     ##################
     ### Add cables ###
@@ -357,6 +425,12 @@ def createScene(rootNode, config):
                         effector_positions[0],
                         [0, - trunk_length / 3, 2/3 * trunk_length],
                         n_samples)
+                elif "T" in corridor_plane:
+                    goal_positions = compute_intermediate_points(
+                            effector_positions[0],
+                            np.dot(rotation_matrix, [0, trunk_length / 4, 13/16 * trunk_length]),
+                            n_samples)
+
             else:
                 effector_positions = [[0, 0, 2/3 * trunk_length], [0, 0, trunk_length]]
                 if corridor_plane == "x+y":
