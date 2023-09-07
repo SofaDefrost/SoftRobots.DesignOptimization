@@ -7,6 +7,10 @@ For now, consider the following essentials:
 
 Here are some intermediate steps of the tutorial. 
 
+* Step 1: Construction is started by defining points:
+
+<img src="../images/GmshTuto_Step1.png" width="250"> 
+
 * Step 3: Planar surface of an accordion shape:
 
 <img src="../images/GmshTuto_Step3.png" width="250"> 
