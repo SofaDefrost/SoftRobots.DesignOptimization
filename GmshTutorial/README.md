@@ -5,6 +5,7 @@ For now, consider the following essentials:
 - Inside the AccordionGeneration.py-script, there is a variable `Step=7`, which allows you to step through the tutorial "by hand". Choose a step between 1 and 9 and run the script to see the intermediate results.
 - Once the meshes needed for simulation are created, the example SOFA-scene "SurfacePressureConstraint_Accordion.py" can be run.
 
+Here are some intermediate steps of the tutorial. 
 Step 3: Planar surface of an accordion shape:
 
 <img src="../images/GmshTuto_Step3.png" width="250"> 
