@@ -21,7 +21,9 @@ More examples will be available in the future.
       4. [Simulating Results from Optimization](#resultsim)
 4. [Examples](#examples)
       1. [Tutorial for Creating Parametric Designs with Gmsh](#gmshtutorial)
-      2. [Design Optimization of a Sensorized Finger](#sensorizedfinger)          
+      2. [Design Optimization of a Sensorized Finger](#sensorizedfinger)
+5. [Known Issues](#knownissues)
+6. [Citing](#citing)
 
 
 # Installation <a name="installation"></a>
@@ -126,8 +128,11 @@ The Sensorized Finger is a cable actuated soft finger with pneumatic chambers lo
 
 As the work on the toolbox is still in progress, there may have slight changes with the results form the article. 
 
+# Known Issues <a name="knownissues"></a> 
 
-# Citing
+During the exploration of design parameters it is possible that no meshes can be created by Gmsh. In fact, it is possible that the call to Gmsh will not automatically terminate. In this case, the whole optimization loop will be stalled, making it necessary to abort and restart or to keep the partial results only. We are currently working on fixing this issue. 
+
+# Citing <a name="citing"></a> 
 If you use the project in your work, please consider citing it with:
 ```bibtex
 @misc{navarro2023open,
