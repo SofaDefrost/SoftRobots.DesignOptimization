@@ -60,9 +60,10 @@ In this section we introduce the main commands for using the toolbox with the Se
 ### Testing a baseline SOFA scene
 For running a parametric scene without optimization, the following command is available:
 ```bash
-python3 main.py -n SensorFinger -sd -so ba 
+python3 main.py -n SensorFinger -op 0 -sd -so ba 
 ```
 - -n, --name: name of the soft robot.
+- -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. This is an optional parameter for running a baseline simulation. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives. After the simulation is run, the cost function related to the optimization problem will be evaluated and printed on the console. In the case of the SoftFinger, the available optimization configurations are found in the subfolder "Models/SensorFinger/OptimizationConfigs/". If you select a non-existing configuration, the script will run with a default value. 
 - -sd, --simulate_design: call to the simulation script in the SOFA GUI
 - -so, --simulation_option: simulation option. For baseline simulation, we have to specify the option "ba" [Optional, default=ba]
 
@@ -72,9 +73,9 @@ Running a sensitivity analysis for measuring the local impact of each design var
 python3 main.py -n SensorFinger -op 0 -sa -nsa 2
 ```
 - -n, --name: see above
-- -op, --optimization_problem: reference to the configuration describing a given optimization problem for a soft robot parametric design. For a same soft robot, several optimization configurations can be implemented considering different design variables or optimization objectives. In the case of the SoftFinger, the available optimization configurations are found in the subfolder "Models/SensorFinger/OptimizationConfigs/". If you select a non-existing configuration, the script will run with a default value.
-- -sa, --sensitivity_analysis: call to the sensitivity analysis script
-- -nsa, --n_samples_per_param: Number of point to sample for each design variable [Optional, default=2]
+- -op, --optimization_problem: see above.
+- -sa, --sensitivity_analysis: call to the sensitivity analysis script.
+- -nsa, --n_samples_per_param: Number of point to sample for each design variable [Optional, default=2].
 
 ### Design Optimization
 Design optimization of a parametric design is launched using:
