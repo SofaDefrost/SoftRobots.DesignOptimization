@@ -103,7 +103,11 @@ Once launched, a command prompt will ask you the id of the design to simulate.
 
 # Examples <a name="examples"></a>
 
-## Gmsh Tutorial for Parametric Construction of a Deformable Pawn with Accordion Structure and Cavity
+## Gmsh Tutorial for Parametric Construction of a Deformable Pawn with Accordion Structure and Internal Cavity
+
+In the folder "GmshTutorial" there is a tutorial explaining step-by-step how a parametric design can be implemented with Gmsh using the Python 3 bindings. In the same subfolder, there is a more detailed README about the tutorial.
+<img src="/images/GmshTuto_Step3.png" width="300"> <img src="/images/GmshTuto_Step5.png" width="300"> <img src="/images/GmshTuto_Step7.png" width="300">
+
 
 ## Design Optimization of a Sensorized Finger <a name="sensorizedfinger"></a> 
 The Sensorized Finger is a cable actuated soft finger with pneumatic chambers located at the joints. This chambers are used as sensors. The measurement of their volume change enables finding the Sensorized Finger actuation state through inverse modeling. The robot parameterization as well as our results are described in this [article](https://arxiv.org/pdf/2304.07260.pdf). We also provide scripts for automatic mold generation for manufacturing any optimized robot.
