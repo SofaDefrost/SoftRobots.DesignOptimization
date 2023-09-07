@@ -19,11 +19,11 @@ Here are some intermediate steps of the tutorial.
 
 <img src="../images/GmshTuto_Step5.png" width="250"> 
 
-* Step 7: Finished pawn body with generated 2D mesh:
+* Step 7: Finished pawn body with generated surface mesh:
 
 <img src="../images/GmshTuto_Step7.png" width="250"> 
 
-* Step 8: Finished pawn body with generated 3D mesh:
+* Step 8: Finished pawn body with generated volumetric  mesh:
 
 <img src="../images/GmshTuto_Step8.png" width="250"> 
 
