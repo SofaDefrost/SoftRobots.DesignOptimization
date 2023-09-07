@@ -8,7 +8,7 @@ This toolkit is provided with the example of the optimization of a soft finger p
 This example illustrates how to couple heuristic search and automatic mesh generation for efficiently exploring the soft finger geometry. We also introduce scripts for automatically generating the molds necessary for manufacturing a given design.
 
 
-![Alt text](/images/Intro_Toolbox.png)
+<img src="/images/Intro_Toolbox.png" width="900">
 
 More examples will be available in the future.
 
