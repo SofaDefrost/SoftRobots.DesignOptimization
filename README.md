@@ -1,4 +1,4 @@
-# Soft Robots Design Optimization Toolkit using SOFA Framework for Simulation
+# Soft Robots Design Optimization Toolbox using SOFA Framework for Simulation
 [![SOFA](https://img.shields.io/badge/SOFA-on_github-orange.svg)](https://github.com/SofaDefrost/sofa) 
 
 This software toolkit contains components for exploring parametric design of any SOFA scene.
