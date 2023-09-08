@@ -10,6 +10,7 @@ __date__ = "Nov 07 2022"
 # External libs
 import importlib
 import pathlib 
+import os
 import sys
 import numpy as np
 from .FitnessEvaluationTools import wrap_evaluate_fitness
@@ -164,7 +165,7 @@ def analyse_sensitivity(config, id_config, n_samples_per_param, method = "OAaT",
                 else:
                     name_file = config.model_name + "_" + method + "_" + str(n_samples_per_param)
 
-                plt.savefig(str(pathlib.Path(__file__).parent.absolute()) + "/SensitivityResults/" + config.model_name + "/" + name_file)
+                plt.savefig(check_path(str(pathlib.Path(__file__).parent.absolute()) + "/SensitivityResults/" + config.model_name) + "/" + name_file)
                 plt.show() 
 
             plot_sensitivities(sensitivities)
@@ -229,11 +230,27 @@ def analyse_sensitivity(config, id_config, n_samples_per_param, method = "OAaT",
             name_file = config.model_name + "_" + str(id_config) + "_" + method + "_" + str(n_samples_per_param) + ".xlsx"
         else:
             name_file = config.model_name + "_" + method + "_" + str(n_samples_per_param) + ".xlsx"
-        styled_df.highlight_null('lightblue').hide_index().to_excel(str(pathlib.Path(__file__).parent.absolute()) + "/SensitivityResults/" + config.model_name + "/" + name_file, engine='openpyxl')
+        styled_df.highlight_null('lightblue').hide_index().to_excel(check_path(str(pathlib.Path(__file__).parent.absolute()) + "/SensitivityResults/" + config.model_name) + "/" + name_file, engine='openpyxl')
 
 
-
-    
+def check_path(path):
+    """
+    Check if a path exists.
+    Create necessary folders if not.
+    ----------
+    Input
+    ----------
+    path: str
+        The adress to check.
+    ----------
+    Output
+    ----------
+    path: str
+        The adress to check.
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
        
         
     
