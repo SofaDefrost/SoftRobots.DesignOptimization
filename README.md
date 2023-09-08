@@ -112,13 +112,9 @@ Once launched, a command prompt will ask you the id of the design to simulate.
 
 ## Gmsh Tutorial for Parametric Construction of a Deformable Pawn with Accordion Structure and Internal Cavity <a name="gmshtutorial"></a> 
 
-In the folder "GmshTutorial" there is a tutorial explaining step-by-step how a parametric design can be implemented with Gmsh using the Python 3 bindings. In the same subfolder, there is a more detailed README about the tutorial. The following are some images from steps in the tutorial:
+In the folder "GmshTutorial" there is a tutorial explaining step-by-step how a parametric design can be implemented with Gmsh using the Python 3 bindings. In the same subfolder, there is a more detailed README about the tutorial. The following are some images extracted from design generation steps and SOFA simulation from the aforementioned tutorial:
 
-<img src="/images/GmshTuto_Step3.png" width="250"> <img src="/images/GmshTuto_Step5.png" width="250"> <img src="/images/GmshTuto_Step7.png" width="250"> 
-
-The paremetric design can be readily simulated in SOFA:
-
-<img src="/images/GmshTuto_SOFASim.png" width="250">
+<img src="/images/GmshTuto_Step3.png" width="200"> <img src="/images/GmshTuto_Step5.png" width="200"> <img src="/images/GmshTuto_Step7.png" width="200"> <img src="/images/GmshTuto_SOFASim.png" width="200" height="260">
 
 
 ## Design Optimization of a Sensorized Finger <a name="sensorizedfinger"></a> 
@@ -126,7 +122,7 @@ The Sensorized Finger is a cable actuated soft finger with pneumatic chambers lo
 
 ![Alt text](/images/SensorizedFingerOverview.png)
 
-As the work on the toolbox is still in progress, there may have slight changes with the results form the article. 
+As the work on the toolbox is still in progress, there may have slight changes with the results from the article. 
 
 # Known Issues <a name="knownissues"></a> 
 
