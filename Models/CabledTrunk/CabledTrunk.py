@@ -67,10 +67,10 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print("Matching metric:", self.ShapeMatchingMetric)
                     self.objectives.append(self.ShapeMatchingMetric)
 
-                if "ReachTargetInTShape" == current_objective_name:
-                    self.ReachTargetInTShape = self.rootNode.QPInverseProblemSolver.objective.value
-                    print("Matching metric:", self.ReachTargetInTShape)
-                    self.objectives.append(self.ReachTargetInTShape)
+                if "Trajectory" == current_objective_name:
+                    self.Trajectory = self.rootNode.QPInverseProblemSolver.objective.value
+                    print("Matching metric:", self.Trajectory)
+                    self.objectives.append(self.Trajectory)
 
 
 def createScene(rootNode, config):
@@ -203,9 +203,10 @@ def createScene(rootNode, config):
     ### Collision Model ####
     ######################## 
     corridor_directions = ["x+y", "y+z", "x-y", "y-z",# Single corridor
-                           "Ty+z", "Ty+z_120a", "Ty+z_240a" # T-shape
+                           "Ly+z", "Ly+z_120a", "Ly+z_240a", # L-shape
+                           "Ty+z", #T-shape
                            ]
-    corridor_plane =  corridor_directions[6] # Pick the direction of the obstacle
+    corridor_plane =  corridor_directions[7] # Pick the direction of the obstacle
     gap, offset = 0.005, 0.005
     # Simple corridors
     if corridor_plane == "x+y":
@@ -234,40 +235,77 @@ def createScene(rootNode, config):
                                     [0, 1, 0],
                                     [0, 0, 1]])
 
-    # T-shape
-    elif "T" in corridor_plane:
-        scaling_corridor = [
-                            # Top left part
-                            [0.0600, gap, 3/4 * config.total_length],
-                            [0.0600, 3/4 * config.total_length, gap],
-                            # Top right part
-                            [0.0600, gap, 3/4 * config.total_length], 
-                            [0.0600, 3/4 * config.total_length, gap],
-                            # Bottom part
-                            [0.0600, -gap, 2 * config.total_length]
-                            ]
-                            
-        translation_corridor = [
+    ### L-shape and T-shape
+    elif "L" or "T" in corridor_plane:
+
+        # Defining the contact planes dimensions
+        if "L" in corridor_plane:
+            scaling_corridor = [
                                 # Top left part
-                                [-scaling_corridor[0][0]/2, gap + config.r_in, -offset],
-                                [-scaling_corridor[0][0]/2, gap + config.r_in, 3/4 * config.total_length - offset],
+                                [0.0600, gap, 3/4 * config.total_length],
+                                [0.0600, 3/4 * config.total_length, gap],
                                 # Top right part
-                                [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length -offset],
-                                [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length - offset],
+                                [0.0600, gap, 3/4 * config.total_length], 
+                                [0.0600, 3/4 * config.total_length, gap],
                                 # Bottom part
-                                [-scaling_corridor[0][0]/2, -gap - config.r_in, -offset]
+                                [0.0600, -gap, 2 * config.total_length]
+                                ]
+        
+        elif "T" in corridor_plane:
+            scaling_corridor = [
+                                # Top left part
+                                [0.0600, gap, 3/4 * config.total_length],
+                                [0.5 * config.total_length, 3/4 * config.total_length, gap],
+                                # Top right part
+                                [0.0600, gap, 3/4 * config.total_length], 
+                                [0.5 * config.total_length, 3/4 * config.total_length, gap],
+                                # Bottom part
+                                [0.0600, -gap, 2 * config.total_length],
+                                # Knee in x-z plane
+                                [0.5 * config.total_length, gap, 3/4 * config.total_length + gap],
+                                [0.5 * config.total_length, gap, 3/4 * config.total_length + gap]
                                 ]
 
-        if corridor_plane == "Ty+z":
+        
+        # Defining the contact planes location       
+        if "L" in corridor_plane:           
+            translation_corridor = [
+                                    # Top left part
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, -offset],
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, 3/4 * config.total_length - offset],
+                                    # Top right part
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length -offset],
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length - offset],
+                                    # Bottom part
+                                    [-scaling_corridor[0][0]/2, -gap - config.r_in, -offset]
+                                    ]
+        
+        elif "T" in corridor_plane:
+            translation_corridor = [
+                                    # Top left part
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, -offset - 1/2 * config.total_length],
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, 1/2 * config.total_length - offset - 1/4 * config.total_length],
+                                    # Top right part
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length -offset],
+                                    [-scaling_corridor[0][0]/2, gap + config.r_in, config.total_length - offset],
+                                    # Bottom part
+                                    [-scaling_corridor[0][0]/2, -gap - config.r_in, -offset],
+                                    # Knee in x-z plane
+                                    [scaling_corridor[0][0]/2, gap + config.r_in, 1/4 * config.total_length - offset],
+                                    [scaling_corridor[0][0]/2, gap + config.r_in + scaling_corridor[0][0]/2, 1/4 * config.total_length - offset],
+                                    ]
+
+
+        if "y+z" in corridor_plane:
             rotation_matrix = np.array([[1, 0, 0],
                                     [0, 1, 0],
                                     [0, 0, 1]])
-        elif corridor_plane == "Ty+z_120a":
+        elif "y+z_120a" in corridor_plane:
             rotation_Z = 2.0944 # 120°
             rotation_matrix = np.array([[math.cos(rotation_Z), -math.sin(rotation_Z), 0],
                                     [math.sin(rotation_Z), math.cos(rotation_Z), 0],
                                     [0, 0, 1]])
-        elif corridor_plane == "Ty+z_240a":
+        elif "y+z_240a" in corridor_plane:
             rotation_Z = 4.18879 # 240°
             rotation_matrix = np.array([[math.cos(rotation_Z), -math.sin(rotation_Z), 0],
                                     [math.sin(rotation_Z), math.cos(rotation_Z), 0],
@@ -318,9 +356,9 @@ def createScene(rootNode, config):
                 rest_positions[i] = rotated_position
             corridor_MO.position.value = rest_positions
 
-            contacts_corridor.addObject('TriangleCollisionModel')
-            # contacts_corridor.addObject('LineCollisionModel')
-            # contacts_corridor.addObject('PointCollisionModel')
+            contacts_corridor.addObject('TriangleCollisionModel', group=2)
+            # contacts_corridor.addObject('LineCollisionModel', group=2)
+            # contacts_corridor.addObject('PointCollisionModel', group=2)
             contacts_corridor.addObject('RigidMapping')
 
     ##################
@@ -401,10 +439,10 @@ def createScene(rootNode, config):
         #####################################
         ### Manage exploration objectives ###
         #####################################
-        if "ReachTargetInTShape" in current_objectives_name:
+        if "Trajectory" in current_objectives_name:
             if config.use_contact:
                 effector_positions = [[0, 0, trunk_length]]
-                n_samples = 20
+                n_samples = 30
                 if corridor_plane == "x+y":
                     goal_positions = compute_intermediate_points(
                         effector_positions[0],
@@ -425,11 +463,22 @@ def createScene(rootNode, config):
                         effector_positions[0],
                         [0, - trunk_length / 3, 2/3 * trunk_length],
                         n_samples)
-                elif "T" in corridor_plane:
+                elif "L" in corridor_plane:
                     goal_positions = compute_intermediate_points(
                             effector_positions[0],
                             np.dot(rotation_matrix, [0, trunk_length / 4, 13/16 * trunk_length]),
                             n_samples)
+                elif "T" in corridor_plane:
+                    # Reaching the first milestone
+                    goal_positions = compute_intermediate_points(
+                            effector_positions[0],
+                            np.dot(rotation_matrix, [0, trunk_length / 4, 5/16 * trunk_length]),
+                            int(n_samples * 3/4))
+                    # Toward the second milestone
+                    goal_positions += compute_intermediate_points(
+                            goal_positions[-1][0],
+                            np.dot(rotation_matrix, [trunk_length / 4, trunk_length / 4, 5/16 * trunk_length]),
+                            int(n_samples * 1/4))
 
             else:
                 effector_positions = [[0, 0, 2/3 * trunk_length], [0, 0, trunk_length]]

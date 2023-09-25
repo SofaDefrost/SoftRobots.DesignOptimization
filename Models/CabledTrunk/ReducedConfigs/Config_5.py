@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Reduced config for the Cabled Trunk
-A big problem for investigating if a target trajectory can be followed with cables everywhere.
+Cable location optimization for following a target trajectory.
 """
 
 __authors__ = "tnavez"
@@ -24,16 +24,13 @@ class ReducedConfig(Config):
     def __init__(self):
         super().__init__()
 
-        # self.n_modules = 25
-        # self.update_total_length()
-
-        self.var_cabled_modules =  2
-        self.n_short_cables = 3 * (self.n_modules - 4) 
         
-        self.end_each_short_cable = []
-        for j in range(3):
-            for i in range(2, self.n_modules - 2):
-                self.end_each_short_cable += [i]
+        self.n_cables = 1 # 1 cable at the tip 
+
+        self.var_cabled_modules =  3 # Number of modules where we can move the cable location
+        k = 1 # Number of cable per considered intermediate module
+        self.n_short_cables = 2 # 3 cables elsewhere
+        self.end_each_short_cable += [8, 11] # Index of intermediate cable locations
 
         self.init_cables()
 
@@ -47,7 +44,7 @@ class ReducedConfig(Config):
     
 
     def get_assessed_together_objectives(self):
-        return [["ReachTargetInTShape"]]
+        return [["Trajectory"]]
 
     
     

@@ -151,7 +151,7 @@ class Config(GmshDesignOptimization):
         return design_variables
 
     def get_objective_data(self):
-        t = 25
+        t = 35
         return {"ShapeMatchingBigS": ["minimize", t]
         }
 
