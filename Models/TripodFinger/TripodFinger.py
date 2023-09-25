@@ -46,7 +46,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
         # Computation of the contact force applied on the object to grasp
         self.rootNode.getRoot().GenericConstraintSolver.computeConstraintForces.value = True
-        self.max_angle = math.pi / 6 
+        self.max_angle = self.config.max_angle
         self.angleInit = 0
         
         # Objective evaluation variables
@@ -92,8 +92,8 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             # Add breaks
             self.angles_per_dt += [prev_angle for a in range(self.break_iter_per_step)]
             self.final_break_dt.append((t+1) * (increments_per_target + self.break_iter_per_step) - 1)
-
-        print(str(self.target_angles))
+        print("Number of target angles:", len(self.target_angles))
+        print("Target angles:", str(self.target_angles))
 
     # A method for dealing with one constraint
     def _dealConstraint(self, s):
@@ -178,7 +178,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 if self.config.use_object:
                     self.evaluate_forces()
                     self.list_force_X.append(self.forceContactX)
-                    #print("self.list_force_X:", self.list_force_X)
+                    # print("self.list_force_X:", self.list_force_X)
 
         ### Save torque and angular displacement at each time step
         self.list_data.append([angle,self.evaluate_torque()[0][0]])
@@ -187,12 +187,13 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         if len(self.int_interval_torques) != 0:
             if abs(self.int_interval_torques[-1][0]) >  MAX_SERVO:
                 print("Reached servo limit at angular step", len(self.int_interval_torques))
+            # print("Actual couple:", self.int_interval_torques[-1][0])
 
         self.current_iter += 1
-
+        
         ### Evaluated forces applied on the cylinder
         if self.current_iter == self.max_iter:
-
+            
             current_objectives_name = self.config.get_currently_assessed_objectives()   
 
             # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
@@ -242,6 +243,11 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                         self.BestContactForceXObjective = 100000
                     else:
                        self.BestContactForceXObjective = max(acceptable_forces) 
+
+                    print("All met contact forces, start:\n")
+                    print(*acceptable_forces, sep="\n")
+                    print("... end")
+
                     print("The Contact Force along X: "+str(self.BestContactForceXObjective))
                     self.objectives.append(self.BestContactForceXObjective)
 
@@ -274,10 +280,17 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     else:
                         self.BestForceTransmissionXObjective = 1 / max(acceptable_transmissions) 
 
-                    print("Herkulex limit met at iter", len(acceptable_transmissions), "out of", len(self.list_force_X), "iters.")
-                    # print("Force Transmission Candidates: ", acceptable_transmissions)
-                    # print("Objective Force Transmission Candidates: ", [ 1 / acceptable_transmissions[i] for i in range(len(acceptable_transmissions))])
-                    print("Objective Force Transmission along X-axis: "+ str(self.BestForceTransmissionXObjective))
+
+                    print("All torques, start:\n")
+                    print(*[abs(self.int_interval_torques[i][0]) for i in range(len(self.int_interval_torques))], sep="\n")
+                    print("... end")
+
+                    print("Force transmissions (force / actuation) while in contact, start:\n")
+                    print(*acceptable_transmissions, sep="\n")
+                    print("... end")
+
+                    print("Best Force Transmission (force / actuation):", max(acceptable_transmissions))
+                    print("Objective Force Transmission (actuation / force) along X-axis: "+ str(self.BestForceTransmissionXObjective))
                     self.objectives.append(self.BestForceTransmissionXObjective)
 
                 # Metric for evaluating the energy needed for performing a grasp
@@ -351,7 +364,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                         + str(self.contactForceXLocationPenalty))
                     self.objectives.append(self.contactForceXLocationPenalty)
 
-                # Calibration metric
+                # Calibration metric using torque
                 if "TorqueCalibration" == current_objective_name:
 
                     # List of simulated torques, taking into account an eventual offset initTorque
@@ -387,10 +400,27 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     self.objectives.append(self.TorqueCalibrationMetric)
                     
 
+                # Calibration metric using contact force
+                if "ContactForceCalibration" == current_objective_name:
+                    # List of simulated contact forces in g
+                    sim_forces = np.array([self.list_force_X[i] * 1000 / 9.81 for i in range(len(self.list_force_X))])
+                    print("Contact forces (in g) measured in simulation", sim_forces)
+
+                    # Forces measured on physical prototype
+                    ground_truth_forces = np.array([0, 0, 0, 0, 0, 8.8, 57.6, 106.4, 155.2, 204])
+                    print("Contact forces (in g) measured on real prototype", ground_truth_forces)
+                    error = np.subtract(ground_truth_forces, sim_forces)
+                    print("Element wise error for cotnact force calibration:", error)
+                    self.ContactForceCalibrationMetric = np.sqrt(np.mean(error**2))
+                    print("Contact force calibration metric: " + str(self.ContactForceCalibrationMetric))
+                    self.objectives.append(self.ContactForceCalibrationMetric)
+
+
+
     def evaluate_torque(self):
         # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
         k = self.actuator.ServoMotor.Articulation.RestShapeSpringsForceField.stiffness.value
-        theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value
+        theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value 
         theta = self.actuator.ServoMotor.Articulation.dofs.position.value
         return k * (theta - theta_0)
     
@@ -402,23 +432,29 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         self.numContact=len(constraint)
         self.forceContactX=0
         self.forceX,self.forceY,self.forceZ=0,0,0
-        
+        # print("Start evaluating forces ...")
         for i in range(len(constraint)):
             indices_constraint.append([int(constraint[i].split(' ')[0]),float(constraint[i].split(' ')[3]),float(constraint[i].split(' ')[4]),float(constraint[i].split(' ')[5])])
+            # print("indices_constraint[i]:", indices_constraint[i])
+            # print("self.contactForces[indices_constraint[i][0]]:", self.contactForces[indices_constraint[i][0]])
             norm=(indices_constraint[i][1]**2+indices_constraint[i][2]**2+indices_constraint[i][3]**2)**0.5
             ###### Evaluate the normal force
             self.forceContactX += 1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][1] 
+            # print("Additional force X:", 1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][1] )
+            # print("self.forceContactX:", self.forceContactX)
             ####### Evaluate force norm
             self.forceX+=1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][1]
             self.forceY+=1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][2]
             self.forceZ+=1/norm*self.contactForces[indices_constraint[i][0]]*indices_constraint[i][3]
-        
-        # In SOFA, force*dt is stored in lambda vectors for ease of use. 
-        # We remove the dt part for obtaining only the force
-        self.forceContactX /= self.rootNode.dt.value
-        self.forceX /= self.rootNode.dt.value 
-        self.forceY /= self.rootNode.dt.value
-        self.forceZ /= self.rootNode.dt.value
+        # print("... end")
+        # In a previous version of SOFA, force*dt was stored in lambda vectors for ease of use. 
+        # This piece of code was necessary to remove the dt part for obtaining only the force
+        # self.forceContactX /= self.rootNode.dt.value
+        # self.forceX /= self.rootNode.dt.value 
+        # self.forceY /= self.rootNode.dt.value
+        # self.forceZ /= self.rootNode.dt.value
+
+        # Contact constraints are counted in double
 
         # Build dict of constraint data from solver
         self.constraints_data = {}
@@ -514,7 +550,7 @@ def createScene(rootNode, config):
     rootNode.addObject('DefaultPipeline')
     rootNode.addObject('BruteForceBroadPhase')
     rootNode.addObject('BVHNarrowPhase')
-    frictionCoef=0.05
+    frictionCoef= 0.85 # 0.85
     rootNode.addObject('RuleBasedContactManager', responseParams="mu="+str(frictionCoef),
                                                     name='Response', response='FrictionContactConstraint')#frictionCoef=0.1
     rootNode.addObject('LocalMinDistance',alarmDistance=5e-3, contactDistance=0.5e-3, angleCone=0.01)
@@ -527,7 +563,7 @@ def createScene(rootNode, config):
 
     # Create one actuated finger
     actuatedFinger = actuated_finger_lib.ActuatedFinger(
-        youngModulus = config.youngModulus * 1.0e9,
+        youngModulus = config.youngModulus * 1.0e9, # In Pa
         poissonRatio = config.poissonRatio,
         stlMeshFileNameIn1 = config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                         generating_function = ContactSurfaceIn1,
@@ -564,34 +600,117 @@ def createScene(rootNode, config):
     if config.use_object:
         rootNode.Modelling.addChild('Obstacle')
 
-        # The most positive x side of the finger is located at x = 3mm, and the radius of the obstacle is 5mm
-        # So to be at 30mm from the finger, the obstacle center should be at x = 3 + 30 + 5 mm
-        # distanceObject represents the 3 + 30 mm
-        cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[config.distanceObject+5.0e-3, 0.0, 30.0e-3],
-                            surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/cylinder.stl',
+        
+        if config.object_shape == "hexagon_horizontal":
+            
+            init_translation = np.array([-1e-3, 0, 0])# For aligning the object on x-y axis.
+            sphObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, 
+                            translation= init_translation + np.array([config.distanceObject, 0.0, 65.0e-3]), 
+                            surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/hexagon_horizontal.stl',
                             MOscale=10e-3,
-                            uniformScale=1.0,
+                            uniformScale=0.001,
                             totalMass=0.032,
                             isAStaticObject=True)
-        cylObst.mass.showAxisSizeFactor = 1e-2
-        cylObst.mstate.name = 'dofs'
+            
+            sphObst.mass.showAxisSizeFactor = 1e-2
+            sphObst.mstate.name = 'dofs'
 
-        # Fix the object in space
-        fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, cylObst, translation=[config.distanceObject+5.0e-3, 0.0, 100.0e-3],
-                            scale=[10e-3, 10e-3, 10e-3])
-        rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
 
-        # Wanted contact location for the object
-        ContactLocation = rootNode.Modelling.Obstacle.addChild('ContactLocation')
-        ContactLocation.addObject('MechanicalObject',
-                        name='dofs',
-                        size=1,
-                        template='Vec3d',
-                        showObject=True,
-                        showObjectScale=2e-3,
-                        drawMode = 1,
-                        showColor = "green",
-                        translation2=[config.distanceObject+5.0e-3-0.5*10e-3, 0, 100.0e-3])
+            # Fix the object in space
+            fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, sphObst, 
+                                     translation = init_translation + np.array([config.distanceObject+5.0e-3, 0.0, 100.0e-3]),
+                                scale=[10e-3, 10e-3, 10e-3])
+            rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
+
+            # Wanted contact location for the object
+            ContactLocation = rootNode.Modelling.Obstacle.addChild('ContactLocation')
+            ContactLocation.addObject('MechanicalObject',
+                            name='dofs',
+                            size=1,
+                            template='Vec3d',
+                            showObject=True,
+                            showObjectScale=2e-3,
+                            drawMode = 1,
+                            showColor = "green",
+                            translation2=[config.distanceObject, 0, 65.0e-3])
+
+
+        elif config.object_shape == "sphere":
+            init_translation = np.array([10e-3, 0, 0])# For aligning the object on x-y axis.
+            sphObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation= init_translation + np.array([config.distanceObject, 0.0, 80.0e-3]),
+                            surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/sphere.stl',
+                            MOscale=10e-3,
+                            uniformScale=2.0,
+                            totalMass=0.032,
+                            isAStaticObject=True)
+            
+            sphObst.mass.showAxisSizeFactor = 1e-2
+            sphObst.mstate.name = 'dofs'
+
+
+            # Fix the object in space
+            fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, sphObst, 
+                                     translation = init_translation + np.array([config.distanceObject+5.0e-3, 0.0, 80.0e-3]),
+                                scale=[10e-3, 10e-3, 10e-3])
+            rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
+
+            # Wanted contact location for the object
+            ContactLocation = rootNode.Modelling.Obstacle.addChild('ContactLocation')
+            ContactLocation.addObject('MechanicalObject',
+                            name='dofs',
+                            size=1,
+                            template='Vec3d',
+                            showObject=True,
+                            showObjectScale=2e-3,
+                            drawMode = 1,
+                            showColor = "green",
+                            translation2=[config.distanceObject, 0, 80.0e-3])
+
+
+
+        else:  #cylinder by default
+            # The most positive x side of the finger is located at x = 3mm, and the radius of the obstacle is 5mm
+            # So to be at 30mm from the finger, the obstacle center should be at x = 3 + 30 + 5 mm
+            # distanceObject represents the 3 + 30 mm
+            # cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, translation=[config.distanceObject+5.0e-3, 0.0, 30.0e-3],
+            #                 surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/cylinder.stl',
+            #                 MOscale=10e-3,
+            #                 uniformScale=1.0,
+            #                 totalMass=0.032,
+            #                 isAStaticObject=True)
+            
+            # The most positive x side of the finger is located at x = 3mm, and the radius of the obstacle is 34mm
+            # So to be at 30mm from the finger, the obstacle center should be at x = 3 + 30 mm
+            # distanceObject represents the 3 + 30 mm
+            cylObst = cylinder_lib.Cylinder(parent=rootNode.Modelling.Obstacle, 
+                            translation= np.array([config.distanceObject, 0.0, 45.0e-3]),
+                            surfaceMeshFileName='Models/TripodFinger/Meshes/ServoMeshes/hexagon.stl',
+                            MOscale=10e-3,
+                            uniformScale=0.001, # Going from mm to m
+                            totalMass=0.032,
+                            isAStaticObject=True)
+            
+            cylObst.mass.showAxisSizeFactor = 1e-2
+            cylObst.mstate.name = 'dofs'
+
+
+            # Fix the object in space
+            fixing_box_lib.FixingBox(rootNode.Modelling.Obstacle, cylObst, translation=[config.distanceObject+5.0e-3, 0.0, 100.0e-3],
+                                scale=[10e-3, 10e-3, 10e-3])
+            rootNode.Modelling.Obstacle.FixingBox.BoxROI.drawBoxes = True
+
+            # Wanted contact location for the object
+            ContactLocation = rootNode.Modelling.Obstacle.addChild('ContactLocation')
+            ContactLocation.addObject('MechanicalObject',
+                            name='dofs',
+                            size=1,
+                            template='Vec3d',
+                            showObject=True,
+                            showObjectScale=2e-3,
+                            drawMode = 1,
+                            showColor = "green",
+                            translation2=[config.distanceObject+5.0e-3-0.5*10e-3, 0, 100.0e-3])
+
 
     # Add the simulated elements to the Simulation node
     rootNode.Simulation.addChild(actuatedFinger.RigidifiedStructure.DeformableParts)
@@ -600,11 +719,11 @@ def createScene(rootNode, config):
     # Temporary addition to have the system correctly built in SOFA
     # Will no longer be required in SOFA v22.12
     rootNode.Simulation.addObject('MechanicalMatrixMapper',
-                               name="deformableAndFreeCenterCoupling",
-                               template='Vec1,Vec3',
-                               object1=actuatedFinger.ActuatedArm.ServoMotor.Articulation.dofs.getLinkPath(),
-                               object2=actuatedFinger.RigidifiedStructure.DeformableParts.dofs.getLinkPath(),
-                               nodeToParse=actuatedFinger.RigidifiedStructure.DeformableParts.ElasticMaterialObject.getLinkPath())
+                            name="deformableAndFreeCenterCoupling",
+                            template='Vec1,Vec3',
+                            object1=actuatedFinger.ActuatedArm.ServoMotor.Articulation.dofs.getLinkPath(),
+                            object2=actuatedFinger.RigidifiedStructure.DeformableParts.dofs.getLinkPath(),
+                            nodeToParse=actuatedFinger.RigidifiedStructure.DeformableParts.ElasticMaterialObject.getLinkPath())
 
     ##################
     ### Controller ###                            

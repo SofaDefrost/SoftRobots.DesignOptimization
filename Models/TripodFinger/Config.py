@@ -16,6 +16,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute()))
 from BaseConfig import GmshDesignOptimization
 
 import numpy as np 
+import math
 
 class Config(GmshDesignOptimization):
     def __init__(self):
@@ -24,14 +25,16 @@ class Config(GmshDesignOptimization):
     def init_model_parameters(self):
         # Specific scene parameters
         self.use_object = True # Specify if we have an object in the scene
+        self.object_shape = "cylinder" # Object shape. Should be cylinder or sphere.
         self.n_target_angles = 8 # Number of intermediate angle objectives - Increasing this number is usefull for couple servoing
-        
+        self.max_angle = math.pi / 6 # Maximum angle impsoed on servomotor
+
+
         # Conversion to mm
         self.mm = 1e-3
 
         # Geometry parameters
         self.L = 100.* self.mm
-        # self.l = 33.* self.mm
         self.l = 33. * self.mm
         self.e1 = 8.* self.mm
         self.e2 = 5.* self.mm

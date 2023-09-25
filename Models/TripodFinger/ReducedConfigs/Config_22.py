@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Reduced config for the Tripod Finger.
-Test of an energy objective, with both transmission and cotnact force objectives.
+Test to grasp a sphere-shaped object.
 Results are generated with calibrated data for FilaFlex Shore60.
 """
 
@@ -19,12 +19,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute()))
 from Config import Config
 
 import numpy as np 
-import math
 
 class ReducedConfig(Config):
 
     def __init__(self):
         super().__init__()
+
+        # Horizontal cylidner
+        self.object_shape = "sphere"
 
         # More control points as the design is bigger
         self.n = 12
@@ -37,18 +39,12 @@ class ReducedConfig(Config):
         self.use_object = True    
         self.distanceObject = 33.1e-3
 
-        # Calibrated mechanical parameters for FilaFlex Shore60
+        # Mechanical parameters found by Quentin
         self.youngModulus = 0.00362 # In GPa
         self.poissonRatio = 0.4518
 
-        # Test calib
-        # self.youngModulus = 0.00061365 # In GPa
-        # self.poissonRatio = 0.456
-        # self.max_angle = 4 * math.pi / 18 
-
-        # Denser mesh, only for calibration purpose
+        # Denser mesh
         self.lc = 3 * self.mm
-
 
         
     def get_objective_data(self):

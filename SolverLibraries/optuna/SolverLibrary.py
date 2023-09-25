@@ -269,7 +269,7 @@ class SolverLibrary(BaseSolverLibrary):
                 sampler = optuna.samplers.CmaEsSampler(n_startup_trials = 20, restart_strategy = 'ipop', inc_popsize = 2)
         else:
             if self.solver_name == "bayesian":
-                sampler = optuna.samplers.MOTPESampler()
+                sampler = optuna.samplers.MOTPESampler(consider_prior=True)
             elif self.solver_name == "evolutionary":
                 sampler = optuna.samplers.NSGAIISampler(population_size = 50, mutation_prob=None, crossover_prob=0.9, swapping_prob=0.5)   
         return sampler 
@@ -348,11 +348,13 @@ class SolverLibrary(BaseSolverLibrary):
         except:
             print("[ERROR] >> The geometry is not properly generated.")
             scores = []
+            # inf = 100000000000
+            inf = np.inf
             for direction in self.objective_directions:
                 if direction == "minimize":
-                    scores.append(np.inf)
+                    scores.append(inf)
                 elif direction == "maximize":
-                    scores.append(- np.inf)
+                    scores.append(- inf)
         return scores
 
         
