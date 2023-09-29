@@ -71,7 +71,7 @@ def evaluate_fitness(config, scene_lib):
         # Check objective has not already been evaluated
         if objective_name not in evaluated_objectives:
             # Check if objective can be assessed jointly with another objective and evaluate fitness functions accordingly
-            joint_objective_id = next((i for i,v in enumerate(config.get_assessed_together_objectives()) if objective_name in v), None)
+            joint_objective_id = next((i for i,v in enumerate(config.get_assessed_together_objectives()) if objective_name in v), None) # Find id of objective if in list
             if joint_objective_id != None:
                 config.set_currently_assessed_objectives(config.get_assessed_together_objectives()[joint_objective_id])
                 for joint_objective_name in config.get_assessed_together_objectives()[joint_objective_id]:
