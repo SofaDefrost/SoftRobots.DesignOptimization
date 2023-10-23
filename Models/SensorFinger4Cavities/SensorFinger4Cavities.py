@@ -35,11 +35,13 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         self.SurfacePressureConstraint1 = self.ModelNode.Cavity01.SurfacePressureConstraint        
         self.SurfacePressureConstraint2 = self.ModelNode.Cavity02.SurfacePressureConstraint
         
+        # ConstantForceField
+        
+        self.ConstantForceField = self.ModelNode.CFFNode.CFF1
         # Objective evaluation variables
         self.current_iter = 0
         current_objectives = self.config.get_currently_assessed_objectives()
-        self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])
-        
+        self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])        
         
         print('>>> ... End')
         
@@ -47,6 +49,31 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
     def onAnimateBeginEvent(self, dt):
         
         self.current_iter += 1
+        
+        if self.current_iter == self.max_iter//2:
+            current_objectives_name = self.config.get_currently_assessed_objectives()
+
+            for i in range(len(current_objectives_name)):
+
+                current_objective_name =  current_objectives_name[i]
+
+                # Sensibility metrics. Reflects the efficiency of a pressure sensor.
+                if "PressureSensibility" == current_objective_name:
+                    
+                    CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
+                    Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
+                    self.GrowthCable = np.abs(Cavity01VolumeGrowth/CavityVolume)                    
+                    print("GrowthCable differential: ", self.GrowthCable)
+                    print(f"self.current_iter: {self.current_iter}")
+                    self.ConstantForceField.forces.value=[[500000,0,0]]
+                    self.CableConstraint.value.value = [0]
+                # Absolute Bending Angle 
+                if "AbsoluteBendingAngle" == current_objective_name:               
+                    CurrentPosition = np.array(self.FollowingMO.position.value[0])
+                    Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
+                    print("Absolute angle: ", Angle)
+                    self.objectives.append(Angle)
+            
         
         if self.current_iter == self.max_iter:            
             
@@ -58,11 +85,12 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
                 if "PressureSensibility" == current_objective_name:
+                    self.ConstantForceField.forces.value=[[500000,0,0]]
                     CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
                     Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
-                    Growth = np.abs(Cavity01VolumeGrowth/CavityVolume)
-                    print("Growth differential: ", Growth)
-                    self.objectives.append(Growth)
+                    self.GrowthCFF= np.abs(Cavity01VolumeGrowth/CavityVolume)
+                    print("GrowthCFF differential: ", self.GrowthCFF)
+                    self.objectives.append(min(self.GrowthCable, self.GrowthCFF))
                     
                 # Sensibility metrics to volume variation. Reflects the efficiency of a volume sensor.
                 if "VolumeSensibility" == current_objective_name:
@@ -86,12 +114,12 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print("Initial Volume ", InitialCavityVolume)
                     self.objectives.append(InitialCavityVolume)
                 
-                # Absolute Bending Angle 
-                if "AbsoluteBendingAngle" == current_objective_name:               
-                    CurrentPosition = np.array(self.FollowingMO.position.value[0])
-                    Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
-                    print("Absolute angle: ", Angle)
-                    self.objectives.append(Angle)
+                # # Absolute Bending Angle 
+                # if "AbsoluteBendingAngle" == current_objective_name:               
+                #     CurrentPosition = np.array(self.FollowingMO.position.value[0])
+                #     Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
+                #     print("Absolute angle: ", Angle)
+                #     self.objectives.append(Angle)
                 
 
 def createScene(rootNode, config):
@@ -236,6 +264,10 @@ def createScene(rootNode, config):
     ReferenceMONode = rootNode.addChild('ReferenceMONode')    
     ReferenceMONode.addObject("MechanicalObject", name="ReferenceMO", template="Vec3d", position=[0.0, 0, -3.0*config.Length], showObject=True, showObjectScale=10) # orientation is 240 deg away from scene origin
 
+    CFFNode = model.addChild('CFFNode')
+    CFFNode.addObject('MechanicalObject', template='Vec3d', position=[[-config.Thickness/2,0.5*config.Height,-1.5*config.Length]],showObject=True, showObjectScale=10, showColor=[0,1,0])
+    CFF1 = CFFNode.addObject('ConstantForceField', name='CFF1', template='Vec3d', indices=[0], forces=[[0,0,0]])
+    CFFNode.addObject('BarycentricMapping')
     # #################
     # # Generate Mold #
     # #################

@@ -37,12 +37,12 @@ class Config(GmshDesignOptimization):
         self.JointSlopeAngle = np.deg2rad(30)
         self.FixationWidth = 3
         
-        self.NBellowSteps = 3
+        self.NBellowSteps = 1
         self.BellowHeight = 4
         self.TeethRadius = self.Thickness/2   
         self.WallThickness = 3.5
-        self.CenterThickness = 1.5
-        self.CavityCorkThickness = 4
+        self.CenterThickness = 0.75
+        self.CavityCorkThickness = 3
 
         self.OuterRadius = self.Thickness/2 + 6
         self.NBellows = 1

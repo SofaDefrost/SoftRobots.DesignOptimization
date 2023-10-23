@@ -34,11 +34,16 @@ class OptimizationConfig(Config):
         }
 
     def get_objective_data(self):
-        return {"PenalizedVolumeSensibility":["maximize", 80],
+        return {"PressureSensibility":["maximize", 160],
             "AbsoluteBendingAngle": ["maximize", 80],}
 
     def get_assessed_together_objectives(self):
-        return [["PenalizedVolumeSensibility", "AbsoluteBendingAngle"]]
+        return [["PressureSensibility", "AbsoluteBendingAngle"]]
+
+    def set_design_variables(self, new_values):
+        super(OptimizationConfig,self).set_design_variables(new_values)
+        self.CableHeight = self.OuterRadius + 0.8
+
     
 
 

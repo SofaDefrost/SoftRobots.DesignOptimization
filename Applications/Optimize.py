@@ -46,7 +46,6 @@ def optimize(config, id_config, n_iter, solver_library_name, solver_name, plot_r
     else:
         problem_name = config.model_name + "_" + solver_library_name + "_" + solver_name
     storage_name = "sqlite:///{}.db".format(check_path(str(pathlib.Path(__file__).parent.absolute())+"/OptimizationResults/" + config.model_name) + "/" + problem_name)
-       
     # Optimization using chosen solver library
     solver_lib = importlib.import_module("SolverLibraries."+ solver_library_name + ".SolverLibrary")
     solver = solver_lib.SolverLibrary(solver_library_name = solver_library_name, solver_name = solver_name)
