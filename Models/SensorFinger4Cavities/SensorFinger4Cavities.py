@@ -36,13 +36,16 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         self.SurfacePressureConstraint2 = self.ModelNode.Cavity02.SurfacePressureConstraint
         
         # ConstantForceField
-        
         self.ConstantForceField = self.ModelNode.CFFNode.CFF1
+        
         # Objective evaluation variables
         self.current_iter = 0
         current_objectives = self.config.get_currently_assessed_objectives()
         self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])        
         
+        # Variable states
+        self.is_bending_angle_set = False
+
         print('>>> ... End')
         
 
@@ -58,8 +61,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 current_objective_name =  current_objectives_name[i]
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
-                if "PressureSensibility" == current_objective_name:
-                    
+                if "PressureSensibility" == current_objective_name:         
                     CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
                     Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
                     self.GrowthCable = np.abs(Cavity01VolumeGrowth/CavityVolume)                    
@@ -67,12 +69,11 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print(f"self.current_iter: {self.current_iter}")
                     self.ConstantForceField.forces.value=[[500000,0,0]]
                     self.CableConstraint.value.value = [0]
-                # Absolute Bending Angle 
-                if "AbsoluteBendingAngle" == current_objective_name:               
-                    CurrentPosition = np.array(self.FollowingMO.position.value[0])
-                    Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
-                    print("Absolute angle: ", Angle)
-                    self.objectives.append(Angle)
+
+                    # If we also wanted to comptue the bending angle, we shoudl do it before adding new pertubations
+                    if "AbsoluteBendingAngle" in current_objectives_name:
+                        self.bending_angle = self.compute_bending_angle()
+                        self.is_bending_angle_set = True
             
         
         if self.current_iter == self.max_iter:            
@@ -114,13 +115,20 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                     print("Initial Volume ", InitialCavityVolume)
                     self.objectives.append(InitialCavityVolume)
                 
-                # # Absolute Bending Angle 
-                # if "AbsoluteBendingAngle" == current_objective_name:               
-                #     CurrentPosition = np.array(self.FollowingMO.position.value[0])
-                #     Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
-                #     print("Absolute angle: ", Angle)
-                #     self.objectives.append(Angle)
-                
+                # Absolute Bending Angle 
+                if "AbsoluteBendingAngle" == current_objective_name:               
+                    if self.is_bending_angle_set:
+                        Angle = self.bending_angle
+                    else:
+                        Angle = self.compute_bending_angle()
+                    print("Absolute angle: ", Angle)
+                    self.objectives.append(Angle)
+
+
+    def compute_bending_angle(self):
+        CurrentPosition = np.array(self.FollowingMO.position.value[0])
+        Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
+        return Angle
 
 def createScene(rootNode, config):
     
