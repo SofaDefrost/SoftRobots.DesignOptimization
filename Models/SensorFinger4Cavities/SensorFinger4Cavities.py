@@ -62,20 +62,20 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
                 if "PressureSensibility" == current_objective_name:         
-                    CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
-                    Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
-                    self.GrowthCable = np.abs(Cavity01VolumeGrowth/CavityVolume)                    
+                    self.GrowthCable = self.compute_pressure_var()                   
                     print("GrowthCable differential: ", self.GrowthCable)
                     print(f"self.current_iter: {self.current_iter}")
-                    self.ConstantForceField.forces.value=[[500000,0,0]]
-                    self.CableConstraint.value.value = [0]
 
-                    # If we also wanted to comptue the bending angle, we shoudl do it before adding new pertubations
+                    # If we also wanted to compute the bending angle, we should do it before adding new pertubations
                     if "AbsoluteBendingAngle" in current_objectives_name:
                         self.bending_angle = self.compute_bending_angle()
                         self.is_bending_angle_set = True
-            
-        
+
+                    # Add pertubations
+                    self.CableConstraint.value.value = [0]
+                    self.ConstantForceField.forces.value = [[500000,0,0]]
+                    
+
         if self.current_iter == self.max_iter:            
             
             current_objectives_name = self.config.get_currently_assessed_objectives()
@@ -86,10 +86,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
                 if "PressureSensibility" == current_objective_name:
-                    self.ConstantForceField.forces.value=[[500000,0,0]]
-                    CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
-                    Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
-                    self.GrowthCFF= np.abs(Cavity01VolumeGrowth/CavityVolume)
+                    self.GrowthCFF= self.compute_pressure_var()
                     print("GrowthCFF differential: ", self.GrowthCFF)
                     self.objectives.append(min(self.GrowthCable, self.GrowthCFF))
                     
@@ -129,6 +126,11 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         CurrentPosition = np.array(self.FollowingMO.position.value[0])
         Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
         return Angle
+    
+    def compute_pressure_var(self):
+        CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
+        Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
+        return np.abs(Cavity01VolumeGrowth/CavityVolume)
 
 def createScene(rootNode, config):
     
