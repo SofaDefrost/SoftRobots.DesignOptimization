@@ -61,7 +61,6 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
             if "PressureSensibility" in current_objectives_names:         
                 self.GrowthCable = self.compute_pressure_var()                   
                 print("GrowthCable differential: ", self.GrowthCable)
-                print(f"self.current_iter: {self.current_iter}")
 
                 # If we also wanted to compute the bending angle, we should do it before adding new pertubations
                 if "AbsoluteBendingAngle" in current_objectives_names:
@@ -76,7 +75,6 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         if self.current_iter == self.max_iter:            
             
             current_objectives_names = self.config.get_currently_assessed_objectives()
-            print("current_objectives_names:", current_objectives_names)
 
             for i in range(len(current_objectives_names)):
 
@@ -118,10 +116,6 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                         Angle = self.compute_bending_angle()
                     print("Absolute angle: ", Angle)
                     self.objectives.append(Angle)
-
-            print("OBJECTIVES:", self.objectives)
-            
-
 
     def compute_bending_angle(self):
         CurrentPosition = np.array(self.FollowingMO.position.value[0])
