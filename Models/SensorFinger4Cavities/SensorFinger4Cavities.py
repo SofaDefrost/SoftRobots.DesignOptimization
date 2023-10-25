@@ -54,35 +54,33 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         self.current_iter += 1
         
         if self.current_iter == self.max_iter//2:
-            current_objectives_name = self.config.get_currently_assessed_objectives()
 
-            for i in range(len(current_objectives_name)):
+            current_objectives_names = self.config.get_currently_assessed_objectives()
 
-                current_objective_name =  current_objectives_name[i]
+            # Sensibility metrics. Reflects the efficiency of a pressure sensor.
+            if "PressureSensibility" in current_objectives_names:         
+                self.GrowthCable = self.compute_pressure_var()                   
+                print("GrowthCable differential: ", self.GrowthCable)
+                print(f"self.current_iter: {self.current_iter}")
 
-                # Sensibility metrics. Reflects the efficiency of a pressure sensor.
-                if "PressureSensibility" == current_objective_name:         
-                    self.GrowthCable = self.compute_pressure_var()                   
-                    print("GrowthCable differential: ", self.GrowthCable)
-                    print(f"self.current_iter: {self.current_iter}")
+                # If we also wanted to compute the bending angle, we should do it before adding new pertubations
+                if "AbsoluteBendingAngle" in current_objectives_names:
+                    self.bending_angle = self.compute_bending_angle()
+                    self.is_bending_angle_set = True
 
-                    # If we also wanted to compute the bending angle, we should do it before adding new pertubations
-                    if "AbsoluteBendingAngle" in current_objectives_name:
-                        self.bending_angle = self.compute_bending_angle()
-                        self.is_bending_angle_set = True
-
-                    # Add pertubations
-                    self.CableConstraint.value.value = [0]
-                    self.ConstantForceField.forces.value = [[500000,0,0]]
+                # Add pertubations
+                self.CableConstraint.value.value = [0]
+                self.ConstantForceField.forces.value = [[500000,0,0]]
                     
 
         if self.current_iter == self.max_iter:            
             
-            current_objectives_name = self.config.get_currently_assessed_objectives()
+            current_objectives_names = self.config.get_currently_assessed_objectives()
+            print("current_objectives_names:", current_objectives_names)
 
-            for i in range(len(current_objectives_name)):
+            for i in range(len(current_objectives_names)):
 
-                current_objective_name =  current_objectives_name[i]
+                current_objective_name =  current_objectives_names[i]
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
                 if "PressureSensibility" == current_objective_name:
@@ -120,6 +118,9 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                         Angle = self.compute_bending_angle()
                     print("Absolute angle: ", Angle)
                     self.objectives.append(Angle)
+
+            print("OBJECTIVES:", self.objectives)
+            
 
 
     def compute_bending_angle(self):
@@ -177,7 +178,6 @@ def createScene(rootNode, config):
     ##################
     ### Load model ###
     ##################
-    print("awa1")
     model.addObject('MeshVTKLoader', name='loader', 
                     filename = config.get_mesh_filename(mode = "Volume", refine = False, 
                                                         generating_function = Finger, 

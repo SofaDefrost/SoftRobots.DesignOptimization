@@ -50,11 +50,11 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         
         if self.current_iter == self.max_iter:            
             
-            current_objectives_name = self.config.get_currently_assessed_objectives()
+            current_objectives_names = self.config.get_currently_assessed_objectives()
 
-            for i in range(len(current_objectives_name)):
+            for i in range(len(current_objectives_names)):
 
-                current_objective_name =  current_objectives_name[i]
+                current_objective_name =  current_objectives_names[i]
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
                 if "PressureSensibility" == current_objective_name:
