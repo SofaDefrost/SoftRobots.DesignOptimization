@@ -105,7 +105,7 @@ python3 main.py -n SensorFinger -op 0 -sd -so fo
 ```
 - -so, --simulation_option: simulation option. For choosing a specific design encountered during design optimization, we have to specify the option "fo" [Optional, default=ba]
 
-Once launched, a command prompt will ask you the id of the design to simulate.
+Once launched, a command prompt will ask you the id of the design to simulate out of all of the designs in the database.
 
 
 # Examples <a name="examples"></a>
