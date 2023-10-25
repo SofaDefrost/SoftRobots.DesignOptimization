@@ -28,8 +28,6 @@ class Config(GmshDesignOptimization):
         ########################
 
         # Geometric parameters
-        # Geometric parameters
-
         self.Length = 40
         self.Height = 20
         self.JointHeight = 6
@@ -93,7 +91,7 @@ class Config(GmshDesignOptimization):
     def get_objective_data(self):
         return {"PressureSensibility": ["maximize", 80],
         "AbsoluteBendingAngle": ["maximize", 80],}
-
+    
     def get_assessed_together_objectives(self):
         return [["PressureSensibility", "AbsoluteBendingAngle"]]
 
