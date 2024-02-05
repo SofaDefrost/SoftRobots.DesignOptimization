@@ -140,7 +140,7 @@ def createScene(rootNode, config):
     ### Load model ###
     ##################
     model.addObject('MeshVTKLoader', name='loader', 
-                    filename = config.get_mesh_filename(mode = "Volume", refine = False, 
+                    filename = config.get_mesh_filename(mode = "Volume", refine = 0, 
                                                         generating_function = Finger, 
                                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius,
                                 TeethRadius = config.TeethRadius, PlateauHeight = config.PlateauHeight, 
@@ -174,7 +174,7 @@ def createScene(rootNode, config):
         elif i == 2:
             Z_translation = -2*(config.Length+3/4*BellowGap)
         CurrentCavity.addObject('MeshSTLLoader', name='MeshLoader', 
-                                filename=config.get_mesh_filename(mode = "Surface", refine = False, 
+                                filename=config.get_mesh_filename(mode = "Surface", refine = 0, 
                                                     generating_function = Cavity,
                                     Length = config.Length, Height = config.Height, Thickness = config.Thickness, 
                                     OuterRadius = config.OuterRadius, NBellows = config.NBellows, 
@@ -190,7 +190,7 @@ def createScene(rootNode, config):
     # Visualization                          
     modelVisu = model.addChild('visu')
     modelVisu.addObject('MeshSTLLoader', name="loader", 
-                        filename = config.get_mesh_filename(mode = "Surface", refine = True, 
+                        filename = config.get_mesh_filename(mode = "Surface", refine = 1, 
                                                     generating_function =  Finger,
                                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, 
                                 TeethRadius = config.TeethRadius, PlateauHeight = config.PlateauHeight, 
@@ -235,7 +235,7 @@ def createScene(rootNode, config):
     if not config.in_optimization_loop:
         
         # Mold Box
-        config.get_mesh_filename(mode = "Surface", refine = True, 
+        config.get_mesh_filename(mode = "Surface", refine = 1, 
                                     generating_function = MoldBox,
                  ThicknessMold = config.ThicknessMold, MoldWallThickness = config.MoldWallThickness, HeightMold = config.HeightMold, 
                  LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
@@ -246,7 +246,7 @@ def createScene(rootNode, config):
                  CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, Stage1Mod=False)         
 
         # Mold Lid
-        config.get_mesh_filename(mode = "Surface", refine = True, 
+        config.get_mesh_filename(mode = "Surface", refine = 1, 
                                     generating_function = MoldLid,
                  ThicknessMold = config.ThicknessMold, MoldWallThickness = config.MoldWallThickness, HeightMold = config.HeightMold, 
                  LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
@@ -259,7 +259,7 @@ def createScene(rootNode, config):
         
 
         # Cavities Cork
-        config.get_mesh_filename(mode = "Surface", refine = True, 
+        config.get_mesh_filename(mode = "Surface", refine = 1, 
                                     generating_function = MoldForCork,
                     OuterRadius = config.OuterRadius, BellowHeight = config.BellowHeight, 
                     NBellows = config.NBellows, WallThickness = config.WallThickness, TeethRadius = config.TeethRadius, 
@@ -267,7 +267,7 @@ def createScene(rootNode, config):
                     CavityCorkThickness = config.CavityCorkThickness) 
 
         # Finger clamp
-        config.get_mesh_filename(mode = "Surface", refine = True, 
+        config.get_mesh_filename(mode = "Surface", refine = 1, 
                                     generating_function = FingerClamp,
                     MoldWallThickness = config.MoldWallThickness, LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
                  Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius, PlateauHeight = config.PlateauHeight, 

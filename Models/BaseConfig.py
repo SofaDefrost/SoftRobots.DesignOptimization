@@ -245,8 +245,8 @@ class GmshDesignOptimization(BaseConfig):
         ----------
         mode: string in {Surface, Volume}
             Mesh file mode.
-        refine: boolean
-            Indicate if we shoudl refien the mesh.
+        refine: int
+            Indicate how many time we should refine the mesh
         generating_function: func
             Link to the gmsh generating function.
         
@@ -269,7 +269,6 @@ class GmshDesignOptimization(BaseConfig):
             # id = self.run_with_timeout(generating_function, kwargs, 15)
             gmsh.model.occ.synchronize()            
             filename = self.get_unique_filename(generating_function)
-            print("awa3")
             if mode == "Step":
                 full_filename = os.path.join(self.meshes_path, filename+".step") 
             elif mode == "Surface":
