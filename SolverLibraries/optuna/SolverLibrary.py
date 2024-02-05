@@ -98,12 +98,12 @@ class SolverLibrary(BaseSolverLibrary):
         plt.show()
         
         # Plot Paretto curve for multi-objective optimization
-        if n_objectives == 2:         
+        if n_objectives == 2:     
             fig = optuna.visualization.plot_pareto_front(problem, target_names=[list(objectives_data.keys())[0], list(objectives_data.keys())[1]])
             fig.show()  
 
-        elif n_objectives == 3:
-            target_names=[list(objectives_data.keys())[2], list(objectives_data.keys())[1], list(objectives_data.keys())[0]]
+        elif n_objectives == 3:   
+            target_names=[list(objectives_data.keys())[0], list(objectives_data.keys())[1], list(objectives_data.keys())[2]]
             fig = optuna.visualization.plot_pareto_front(problem, target_names=target_names)
             fig.show()
             

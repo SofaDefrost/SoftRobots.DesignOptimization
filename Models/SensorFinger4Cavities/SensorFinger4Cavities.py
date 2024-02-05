@@ -35,12 +35,17 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         self.SurfacePressureConstraint1 = self.ModelNode.Cavity01.SurfacePressureConstraint        
         self.SurfacePressureConstraint2 = self.ModelNode.Cavity02.SurfacePressureConstraint
         
+        # ConstantForceField
+        self.ConstantForceField = self.ModelNode.CFFNode.CFF1
+        
         # Objective evaluation variables
         self.current_iter = 0
         current_objectives = self.config.get_currently_assessed_objectives()
-        self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])
+        self.max_iter = max([self.config.get_objective_data()[current_objectives[i]][1] for i in range(len(current_objectives))])        
         
-        
+        # Variable states
+        self.is_bending_angle_set = False
+
         print('>>> ... End')
         
 
@@ -48,6 +53,25 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
         
         self.current_iter += 1
         
+        if self.current_iter == self.max_iter//2:
+
+            current_objectives_names = self.config.get_currently_assessed_objectives()
+
+            # Sensibility metrics. Reflects the efficiency of a pressure sensor.
+            if "PressureSensibility" in current_objectives_names:         
+                self.GrowthCable = self.compute_pressure_var()                   
+                print("GrowthCable differential: ", self.GrowthCable)
+
+                # If we also wanted to compute the bending angle, we should do it before adding new pertubations
+                if "AbsoluteBendingAngle" in current_objectives_names:
+                    self.bending_angle = self.compute_bending_angle()
+                    self.is_bending_angle_set = True
+
+                # Add pertubations
+                self.CableConstraint.value.value = [0]
+                self.ConstantForceField.forces.value = [[500000,0,0]]
+                    
+
         if self.current_iter == self.max_iter:            
             
             current_objectives_names = self.config.get_currently_assessed_objectives()
@@ -58,11 +82,9 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
                 # Sensibility metrics. Reflects the efficiency of a pressure sensor.
                 if "PressureSensibility" == current_objective_name:
-                    CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
-                    Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
-                    Growth = np.abs(Cavity01VolumeGrowth/CavityVolume)
-                    print("Growth differential: ", Growth)
-                    self.objectives.append(Growth)
+                    self.GrowthCFF= self.compute_pressure_var()
+                    print("GrowthCFF differential: ", self.GrowthCFF)
+                    self.objectives.append(min(self.GrowthCable, self.GrowthCFF))
                     
                 # Sensibility metrics to volume variation. Reflects the efficiency of a volume sensor.
                 if "VolumeSensibility" == current_objective_name:
@@ -88,11 +110,22 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
                 
                 # Absolute Bending Angle 
                 if "AbsoluteBendingAngle" == current_objective_name:               
-                    CurrentPosition = np.array(self.FollowingMO.position.value[0])
-                    Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
+                    if self.is_bending_angle_set:
+                        Angle = self.bending_angle
+                    else:
+                        Angle = self.compute_bending_angle()
                     print("Absolute angle: ", Angle)
                     self.objectives.append(Angle)
-                
+
+    def compute_bending_angle(self):
+        CurrentPosition = np.array(self.FollowingMO.position.value[0])
+        Angle = np.abs(math.acos( abs(CurrentPosition[2]) / np.linalg.norm(CurrentPosition)))
+        return Angle
+    
+    def compute_pressure_var(self):
+        CavityVolume = self.ModelNode.Cavity01.SurfacePressureConstraint.cavityVolume.value
+        Cavity01VolumeGrowth = self.SurfacePressureConstraint1.volumeGrowth.value
+        return np.abs(Cavity01VolumeGrowth/CavityVolume)
 
 def createScene(rootNode, config):
     
@@ -143,13 +176,14 @@ def createScene(rootNode, config):
                     filename = config.get_mesh_filename(mode = "Volume", refine = False, 
                                                         generating_function = Finger, 
                                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius,
-                                TeethRadius = config.TeethRadius, PlateauHeight = config.PlateauHeight, 
+                                TeethRadius = config.TeethRadius,
                                 JointHeight = config.JointHeight, Thickness = config.Thickness, 
                                 JointSlopeAngle = config.JointSlopeAngle, FixationWidth = config.FixationWidth, 
-                                BellowHeight = config.BellowHeight, NBellows = config.NBellows, 
+                                NBellowSteps = config.NBellowSteps, BellowHeight= config.BellowHeight,
                                 WallThickness = config.WallThickness, CenterThickness = config.CenterThickness,
                                 CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, 
                                 RefineAroundCavities=config.RefineAroundCavities))
+    print("awa2")
     model.addObject('TetrahedronSetTopologyContainer', name='container', src='@loader')
     model.addObject('TetrahedronSetGeometryAlgorithms')
     model.addObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false', showIndicesScale='4e-5')
@@ -166,22 +200,28 @@ def createScene(rootNode, config):
     FollowingMONode.addObject("BarycentricMapping")
 
     # Effectors                                               
-    for i in range(1,3):                        
+    for i in range(1,5):                        
         CurrentCavity = model.addChild('Cavity0'+str(i))
-        BellowGap = (config.NBellows-1)*config.BellowHeight
-        if i == 1:
-            Z_translation = -(config.Length+BellowGap/2)
-        elif i == 2:
-            Z_translation = -2*(config.Length+3/4*BellowGap)
+        BellowGap = (config.NBellowSteps-1)*config.BellowHeight
+        LeftRight = 1 # Left, no mirroring
+        
+        if i <= 2:
+            Z_translation = -config.Length
+        else:
+            Z_translation = -2*config.Length
+        
+        if i%2==1:
+            LeftRight = -1 # mirror from left to right
+            
         CurrentCavity.addObject('MeshSTLLoader', name='MeshLoader', 
                                 filename=config.get_mesh_filename(mode = "Surface", refine = False, 
                                                     generating_function = Cavity,
                                     Length = config.Length, Height = config.Height, Thickness = config.Thickness, 
-                                    OuterRadius = config.OuterRadius, NBellows = config.NBellows, 
+                                    OuterRadius = config.OuterRadius, NBellowSteps = config.NBellowSteps, 
                                     BellowHeight = config.BellowHeight, TeethRadius = config.TeethRadius, 
                                     WallThickness = config.WallThickness, CenterThickness = config.CenterThickness,
-                                    CavityCorkThickness = config.CavityCorkThickness, PlateauHeight = config.PlateauHeight, 
-                                    Z_translation = Z_translation, RefineAroundCavities = config.RefineAroundCavities))
+                                    CavityCorkThickness = config.CavityCorkThickness, 
+                                    Z_translation = Z_translation, LeftRight=LeftRight, RefineAroundCavities = config.RefineAroundCavities))
         CurrentCavity.addObject('Mesh', name='topology', src='@MeshLoader')
         CurrentCavity.addObject('MechanicalObject', src="@topology")
         CurrentCavity.addObject('SurfacePressureConstraint', template='Vec3d', triangles='@topology.triangles')
@@ -193,10 +233,10 @@ def createScene(rootNode, config):
                         filename = config.get_mesh_filename(mode = "Surface", refine = True, 
                                                     generating_function =  Finger,
                                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, 
-                                TeethRadius = config.TeethRadius, PlateauHeight = config.PlateauHeight, 
+                                TeethRadius = config.TeethRadius,
                                 JointHeight = config.JointHeight, Thickness = config.Thickness, JointSlopeAngle = config.JointSlopeAngle, 
-                                FixationWidth = config.FixationWidth, BellowHeight = config.BellowHeight, 
-                                NBellows = config.NBellows, WallThickness = config.WallThickness, 
+                                FixationWidth = config.FixationWidth,
+                                NBellowSteps = config.NBellowSteps, BellowHeight= config.BellowHeight, WallThickness = config.WallThickness, 
                                 CenterThickness = config.CenterThickness, CavityCorkThickness = config.CavityCorkThickness, 
                                 lc = config.lc_finger, RefineAroundCavities=config.RefineAroundCavities))
     modelVisu.addObject('OglModel', src="@loader", scale3d=[1, 1, 1])
@@ -228,52 +268,56 @@ def createScene(rootNode, config):
     ReferenceMONode = rootNode.addChild('ReferenceMONode')    
     ReferenceMONode.addObject("MechanicalObject", name="ReferenceMO", template="Vec3d", position=[0.0, 0, -3.0*config.Length], showObject=True, showObjectScale=10) # orientation is 240 deg away from scene origin
 
-    #################
-    # Generate Mold #
-    #################
-    # Generate Mold geometry only if not in an optimization loop
-    if not config.in_optimization_loop:
+    CFFNode = model.addChild('CFFNode')
+    CFFNode.addObject('MechanicalObject', template='Vec3d', position=[[-config.Thickness/2,0.5*config.Height,-1.5*config.Length]],showObject=True, showObjectScale=10, showColor=[0,1,0])
+    CFF1 = CFFNode.addObject('ConstantForceField', name='CFF1', template='Vec3d', indices=[0], forces=[[0,0,0]])
+    CFFNode.addObject('BarycentricMapping')
+    # #################
+    # # Generate Mold #
+    # #################
+    # # Generate Mold geometry only if not in an optimization loop
+    # if not config.in_optimization_loop:
         
-        # Mold Box
-        config.get_mesh_filename(mode = "Surface", refine = True, 
-                                    generating_function = MoldBox,
-                 ThicknessMold = config.ThicknessMold, MoldWallThickness = config.MoldWallThickness, HeightMold = config.HeightMold, 
-                 LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
-                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius, 
-                 PlateauHeight = config.PlateauHeight, JointHeight = config.JointHeight, Thickness = config.Thickness, 
-                 JointSlopeAngle = config.JointSlopeAngle, FixationWidth = config.FixationWidth, BellowHeight = config.BellowHeight, 
-                 NBellows = config.NBellows, WallThickness = config.WallThickness, CenterThickness = config.CenterThickness, 
-                 CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, Stage1Mod=False)         
+    #     # Mold Box
+    #     config.get_mesh_filename(mode = "Surface", refine = True, 
+    #                                 generating_function = MoldBox,
+    #              ThicknessMold = config.ThicknessMold, MoldWallThickness = config.MoldWallThickness, HeightMold = config.HeightMold, 
+    #              LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
+    #              Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius, 
+    #              JointHeight = config.JointHeight, Thickness = config.Thickness, 
+    #              JointSlopeAngle = config.JointSlopeAngle, FixationWidth = config.FixationWidth, BellowHeight = config.BellowHeight, 
+    #              NBellowSteps = config.NBellowSteps, WallThickness = config.WallThickness, CenterThickness = config.CenterThickness, 
+    #              CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, Stage1Mod=False)         
 
-        # Mold Lid
-        config.get_mesh_filename(mode = "Surface", refine = True, 
-                                    generating_function = MoldLid,
-                 ThicknessMold = config.ThicknessMold, MoldWallThickness = config.MoldWallThickness, HeightMold = config.HeightMold, 
-                 LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
-                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius, 
-                 PlateauHeight = config.PlateauHeight, JointHeight = config.JointHeight, Thickness = config.Thickness, 
-                 JointSlopeAngle = config.JointSlopeAngle, FixationWidth = config.FixationWidth, BellowHeight = config.BellowHeight, 
-                 NBellows = config.NBellows, WallThickness = config.WallThickness, CenterThickness = config.CenterThickness, 
-                 CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, MoldCoverTolerance = config.MoldCoverTolerance, 
-                 Stage1Mod=False)  
+    #     # Mold Lid
+    #     config.get_mesh_filename(mode = "Surface", refine = True, 
+    #                                 generating_function = MoldLid,
+    #              ThicknessMold = config.ThicknessMold, MoldWallThickness = config.MoldWallThickness, HeightMold = config.HeightMold, 
+    #              LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
+    #              Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius, 
+    #              JointHeight = config.JointHeight, Thickness = config.Thickness, 
+    #              JointSlopeAngle = config.JointSlopeAngle, FixationWidth = config.FixationWidth, BellowHeight = config.BellowHeight, 
+    #              NBellowSteps = config.NBellowSteps, WallThickness = config.WallThickness, CenterThickness = config.CenterThickness, 
+    #              CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, MoldCoverTolerance = config.MoldCoverTolerance, 
+    #              Stage1Mod=False)  
         
 
-        # Cavities Cork
-        config.get_mesh_filename(mode = "Surface", refine = True, 
-                                    generating_function = MoldForCork,
-                    OuterRadius = config.OuterRadius, BellowHeight = config.BellowHeight, 
-                    NBellows = config.NBellows, WallThickness = config.WallThickness, TeethRadius = config.TeethRadius, 
-                    CenterThickness = config.CenterThickness, PlateauHeight = config.PlateauHeight, 
-                    CavityCorkThickness = config.CavityCorkThickness) 
+    #     # Cavities Cork
+    #     config.get_mesh_filename(mode = "Surface", refine = True, 
+    #                                 generating_function = MoldForCork,
+    #                 OuterRadius = config.OuterRadius, BellowHeight = config.BellowHeight, 
+    #                 NBellowSteps = config.NBellowSteps, WallThickness = config.WallThickness, TeethRadius = config.TeethRadius, 
+    #                 CenterThickness = config.CenterThickness,
+    #                 CavityCorkThickness = config.CavityCorkThickness) 
 
-        # Finger clamp
-        config.get_mesh_filename(mode = "Surface", refine = True, 
-                                    generating_function = FingerClamp,
-                    MoldWallThickness = config.MoldWallThickness, LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
-                 Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius, PlateauHeight = config.PlateauHeight, 
-                 JointHeight = config.JointHeight, Thickness = config.Thickness, JointSlopeAngle = config.JointSlopeAngle, FixationWidth= config.FixationWidth, 
-                 BellowHeight = config.BellowHeight, NBellows = config.NBellows, WallThickness = config.WallThickness, 
-                 CenterThickness = config.CenterThickness, CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, Stage1Mod=False) 
+    #     # Finger clamp
+    #     config.get_mesh_filename(mode = "Surface", refine = True, 
+    #                                 generating_function = FingerClamp,
+    #                 MoldWallThickness = config.MoldWallThickness, LengthMold = config.LengthMold, CableHeight = config.CableHeight, CableRadius = config.CableRadius,
+    #              Length = config.Length, Height = config.Height, OuterRadius = config.OuterRadius, TeethRadius = config.TeethRadius,
+    #              JointHeight = config.JointHeight, Thickness = config.Thickness, JointSlopeAngle = config.JointSlopeAngle, FixationWidth= config.FixationWidth, 
+    #              BellowHeight = config.BellowHeight, NBellowSteps = config.NBellowSteps, WallThickness = config.WallThickness, 
+    #              CenterThickness = config.CenterThickness, CavityCorkThickness = config.CavityCorkThickness, lc = config.lc_finger, Stage1Mod=False) 
 
         
 
