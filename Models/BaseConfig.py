@@ -226,6 +226,7 @@ class GmshDesignOptimization(BaseConfig):
         hashed_name: string
             An unique hashed name for the generated geometry.
         """
+        # gmsh.fltk.run()
         temporary_file = tempfile.NamedTemporaryFile(suffix='.geo_unrolled')
         temporary_file.close()
         gmsh.write(temporary_file.name)
@@ -244,8 +245,8 @@ class GmshDesignOptimization(BaseConfig):
         ----------
         mode: string in {Surface, Volume}
             Mesh file mode.
-        refine: boolean
-            Indicate if we shoudl refien the mesh.
+        refine: int
+            Indicate how many time we should refine the mesh
         generating_function: func
             Link to the gmsh generating function.
         
@@ -264,15 +265,16 @@ class GmshDesignOptimization(BaseConfig):
             gmsh.initialize()
             # Silence gmsh so by default nothing is printed
             gmsh.option.setNumber("General.Terminal", 0)
-            id = generating_function(**kwargs)
+            id = generating_function(**kwargs)            
             # id = self.run_with_timeout(generating_function, kwargs, 15)
-            gmsh.model.occ.synchronize()
+            gmsh.model.occ.synchronize()            
             filename = self.get_unique_filename(generating_function)
             if mode == "Step":
                 full_filename = os.path.join(self.meshes_path, filename+".step") 
             elif mode == "Surface":
                 full_filename = os.path.join(self.meshes_path, filename+"_surface.stl")   
             elif mode == "Volume":
+                
                 full_filename = os.path.join(self.meshes_path, filename+"_volume.vtk") 
             if not os.path.exists(full_filename):
                 # When we are generating the mesh, it is better to know something is happening so let's reactive the printed messages
@@ -280,6 +282,7 @@ class GmshDesignOptimization(BaseConfig):
                 if mode == "Surface":
                     gmsh.model.mesh.generate(2)
                 elif mode == "Volume":
+                    
                     gmsh.model.mesh.generate(3)
                 if refine:
                     gmsh.model.mesh.refine()

@@ -8,8 +8,8 @@ Created on Tue Dec 15 14:56:53 2020
 import gmsh
 import numpy as np
 
-def setMeshingOptions(Width, Depth, Height):
-    lc=4
+def setMeshingOptions(Width, Depth, Height, lc=4):
+    
     gmsh.model.mesh.field.add("Box", 6)
     gmsh.model.mesh.field.setNumber(6, "VIn", lc)
     gmsh.model.mesh.field.setNumber(6, "VOut", lc)
@@ -136,9 +136,9 @@ def generateGeometry(Step):
     gmsh.logger.start() 
     
     
-    Radius = 9
+    Radius = 20
     NSegments = 6
-    SegmentHeight = 5
+    SegmentHeight = 8
     TeethDepth = 3
     WallThickness = 4
     
@@ -166,7 +166,7 @@ def generateGeometry(Step):
     gmsh.write('Accordion_Parametric.step')
     
     
-    setMeshingOptions(Radius, Radius, TotalHeight)
+    setMeshingOptions(Radius, Radius, TotalHeight, 3.5)
     
     gmsh.model.mesh.generate(2)
     gmsh.write('Accordion_Surface.stl')
@@ -204,7 +204,7 @@ def generateGeometry(Step):
         
     gmsh.model.occ.synchronize()
 
-Step=8
+Step=9
 print("Showing Step: " + str(Step))
 generateGeometry(Step)
     

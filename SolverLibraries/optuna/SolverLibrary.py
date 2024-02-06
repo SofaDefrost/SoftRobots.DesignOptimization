@@ -70,40 +70,46 @@ class SolverLibrary(BaseSolverLibrary):
         n_complete = len([t for t in trials if t.state == optuna.structs.TrialState.COMPLETE])
         print('Num. of complete trials:', n_complete)        
         t = [i for i in range(n_complete)]
-        
-        # Plot objectives convergence history
         objectives_data = config.get_objective_data()
         n_objectives = len(objectives_data)
+        
+        # Plot objectives convergence history
+        # if n_objectives == 1:
+        #     objectives = []
+        #     for trial in trials:
+        #         if trial.state == optuna.structs.TrialState.COMPLETE:
+        #             objectives.append(trial.value)
+        #     print("objectives:", objectives)
+        #     plt.scatter(t, objectives, alpha=0.5)
+        # elif n_objectives > 1:
+        #     objectives_history = []
+        #     colors = cm.rainbow(np.linspace(0, 1, n_objectives))
+        #     for i in range(n_objectives):
+        #         objectives = []
+        #         for trial in trials:
+        #             if trial.state == optuna.structs.TrialState.COMPLETE:
+        #                 objectives.append(trial.values[i])
+        #         objectives_history.append(objectives)
+        #         if i != 0:
+        #             plt.twinx()
+        #         plt.scatter(t, objectives, alpha=0.5, color = colors[i])
+        #         plt.tick_params(axis='y', labelcolor=colors[i])
+        #         plt.ylabel(list(objectives_data.keys())[i])             
+        # plt.suptitle("Objective per trial")
+        # plt.show()
+
+        # Objective history for single-objective optimization
         if n_objectives == 1:
-            objectives = []
-            for trial in trials:
-                if trial.state == optuna.structs.TrialState.COMPLETE:
-                    objectives.append(trial.value)
-            plt.scatter(t, objectives, alpha=0.5)
-        elif n_objectives > 1:
-            objectives_history = []
-            colors = cm.rainbow(np.linspace(0, 1, n_objectives))
-            for i in range(n_objectives):
-                objectives = []
-                for trial in trials:
-                    if trial.state == optuna.structs.TrialState.COMPLETE:
-                        objectives.append(trial.values[i])
-                objectives_history.append(objectives)
-                if i != 0:
-                    plt.twinx()
-                plt.scatter(t, objectives, alpha=0.5, color = colors[i])
-                plt.tick_params(axis='y', labelcolor=colors[i])
-                plt.ylabel(list(objectives_data.keys())[i])             
-        plt.suptitle("Objective per trial")
-        plt.show()
+            fig = optuna.visualization.plot_optimization_history(problem, target_name=list(objectives_data.keys())[0])
+            fig.show()
         
         # Plot Paretto curve for multi-objective optimization
-        if n_objectives == 2:         
+        if n_objectives == 2:     
             fig = optuna.visualization.plot_pareto_front(problem, target_names=[list(objectives_data.keys())[0], list(objectives_data.keys())[1]])
             fig.show()  
 
-        elif n_objectives == 3:
-            target_names=[list(objectives_data.keys())[2], list(objectives_data.keys())[1], list(objectives_data.keys())[0]]
+        elif n_objectives == 3:   
+            target_names=[list(objectives_data.keys())[0], list(objectives_data.keys())[1], list(objectives_data.keys())[2]]
             fig = optuna.visualization.plot_pareto_front(problem, target_names=target_names)
             fig.show()
             
@@ -137,8 +143,6 @@ class SolverLibrary(BaseSolverLibrary):
                 plt.ylabel(list(objectives_data.keys())[1])
             plt.show()
             """
-
-
 
         # Plot parameters history
         design_variables = config.get_design_variables()
@@ -209,9 +213,9 @@ class SolverLibrary(BaseSolverLibrary):
                     print("You should choose an integer between 0 and " + str(len(best_trials) - 1))
                     chosen_id = int(input("Please pick the id of the chosen design:"))
             best_trial = best_trials[chosen_id] 
-            best_parameters = best_trial.params
-            print("Selected best_params:", best_parameters)
-            return best_parameters
+        best_parameters = best_trial.params
+        print("Selected best_params:", best_parameters)
+        return best_parameters
 
     def init_problem(self, problem_name, storage_name, config):
         """
@@ -265,7 +269,7 @@ class SolverLibrary(BaseSolverLibrary):
                 sampler = optuna.samplers.CmaEsSampler(n_startup_trials = 20, restart_strategy = 'ipop', inc_popsize = 2)
         else:
             if self.solver_name == "bayesian":
-                sampler = optuna.samplers.MOTPESampler()
+                sampler = optuna.samplers.MOTPESampler(consider_prior=True)
             elif self.solver_name == "evolutionary":
                 sampler = optuna.samplers.NSGAIISampler(population_size = 50, mutation_prob=None, crossover_prob=0.9, swapping_prob=0.5)   
         return sampler 
@@ -344,11 +348,13 @@ class SolverLibrary(BaseSolverLibrary):
         except:
             print("[ERROR] >> The geometry is not properly generated.")
             scores = []
+            # inf = 100000000000
+            inf = np.inf
             for direction in self.objective_directions:
                 if direction == "minimize":
-                    scores.append(np.inf)
+                    scores.append(inf)
                 elif direction == "maximize":
-                    scores.append(- np.inf)
+                    scores.append(- inf)
         return scores
 
         
