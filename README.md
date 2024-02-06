@@ -22,6 +22,7 @@ More examples will be available in the future.
 4. [Examples](#examples)
       1. [Tutorial for Creating Parametric Designs with Gmsh](#gmshtutorial)
       2. [Design Optimization of a Sensorized Finger](#sensorizedfinger)
+      3. [Design Optimization of a Contact-Aided Manipulator](#contactaidedfinger)
 5. [Known Issues](#knownissues)
 6. [Citing](#citing)
 
@@ -105,7 +106,7 @@ python3 main.py -n SensorFinger -op 0 -sd -so fo
 ```
 - -so, --simulation_option: simulation option. For choosing a specific design encountered during design optimization, we have to specify the option "fo" [Optional, default=ba]
 
-Once launched, a command prompt will ask you the id of the design to simulate out of all of the designs in the database.
+Once launched, a command prompt will ask you the id of the design to simulate.
 
 
 # Examples <a name="examples"></a>
@@ -123,6 +124,13 @@ The Sensorized Finger is a cable actuated soft finger with pneumatic chambers lo
 ![Alt text](/images/SensorizedFingerOverview.png)
 
 As the work on the toolbox is still in progress, there may have slight changes with the results from the article. 
+
+## Design Optimization of a Contact-Aided Manipulator <a name="contactaidedfinger"></a> 
+The Contact-Aided Manipulator is composed of three soft fingers actuated by one servomotor each. The aime is to make use of localized self-contacts for better energy consumption and grasping performances. The robot parameterization as well as our results are described in this [article]() (soon to be published). 
+
+![Alt text](/images/ContactAidedFinger_Overview.png)
+
+
 
 # Known Issues <a name="knownissues"></a> 
 
