@@ -126,7 +126,7 @@ The Sensorized Finger is a cable actuated soft finger with pneumatic chambers lo
 As the work on the toolbox is still in progress, there may have slight changes with the results from the article. 
 
 ## Design Optimization of a Contact-Aided Manipulator <a name="contactaidedfinger"></a> 
-The Contact-Aided Manipulator is composed of three soft fingers actuated by one servomotor each. The aime is to make use of localized self-contacts for better energy consumption and grasping performances. The robot parameterization as well as our results are described in this [article]() (soon to be published). 
+The Contact-Aided Manipulator is composed of three soft fingers actuated by one servomotor each. The aim is to make use of localized self-contacts for better energy consumption and grasping performances. The robot parameterization as well as our results are described in this [article]() (soon to be published). 
 
 ![Alt text](/images/ContactAidedFinger_Overview.png)
 
