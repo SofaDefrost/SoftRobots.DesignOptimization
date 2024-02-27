@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Reduced config for the Tripod Finger.
-We optimise both for:
-    - A maximum contact Force along x-axis.
-    - A minimum material mass needed to manufacture the finger.
+We optimise both for the contact location and the force transmission.
 """
 
 __authors__ = "tnavez"
@@ -24,11 +22,13 @@ import numpy as np
 class OptimizationConfig(Config):
 
     def get_objective_data(self):
-        return {"ContactForceX": ["maximize", 50],
-        "Mass": ["minimize", 0]}
+        t = 50
+        return {"LocateContactPrecision": ["minimize", t],
+                "ForceTransmissionX": ["minimize", t],
+                "ContactForceX": ["maximize", t]}
 
     def get_assessed_together_objectives(self):
-        return [["ContactForceX", "Mass"]]
+        return [["LocateContactPrecision", "ForceTransmissionX", "ContactForceX"]]
     
 
 
