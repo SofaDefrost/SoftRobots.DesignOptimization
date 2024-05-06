@@ -113,20 +113,20 @@ Once launched, a command prompt will ask you the id of the design to simulate.
 
 ## Gmsh Tutorial for Parametric Construction of a Deformable Pawn with Accordion Structure and Internal Cavity <a name="gmshtutorial"></a> 
 
-In the folder "GmshTutorial" there is a tutorial explaining step-by-step how a parametric design can be implemented with Gmsh using the Python 3 bindings. In the same subfolder, there is a more detailed README about the tutorial. The following are some images extracted from design generation steps and SOFA simulation from the aforementioned tutorial:
+In the folder ["GmshTutorial"](GmshTutorial) there is a tutorial explaining step-by-step how a parametric design can be implemented with Gmsh using the Python 3 bindings. In the same subfolder, there is a more detailed README about the tutorial. The following are some images extracted from design generation steps and SOFA simulation from the aforementioned tutorial:
 
 <img src="/images/GmshTuto_Step3.png" width="200"> <img src="/images/GmshTuto_Step5.png" width="200"> <img src="/images/GmshTuto_Step7.png" width="200"> <img src="/images/GmshTuto_SOFASim.png" width="200" height="260">
 
 
 ## Design Optimization of a Sensorized Finger <a name="sensorizedfinger"></a> 
-The Sensorized Finger is a cable actuated soft finger with pneumatic chambers located at the joints. This chambers are used as sensors. The measurement of their volume change enables finding the Sensorized Finger actuation state through inverse modeling. The robot parameterization as well as our results are described in this [article](https://arxiv.org/pdf/2304.07260.pdf). We also provide scripts for automatic mold generation for manufacturing any optimized robot.
+The [Sensorized Finger](Models/SensorFinger) is a cable-actuated soft finger with pneumatic chambers located at the joints. These chambers are used as sensors. The measurement of their volume change enables finding the Sensorized Finger actuation state through inverse modeling. The robot parameterization as well as our results are described in this [article](https://arxiv.org/pdf/2304.07260.pdf). We also provide scripts for automatic mold generation for manufacturing any optimized robot.
 
 ![Alt text](/images/SensorizedFingerOverview.png)
 
-As the work on the toolbox is still in progress, there may have slight changes with the results from the article. 
+As the work on the toolbox is still in progress, there may be slight changes with the results from the article. 
 
-## Design Optimization of a Contact-Aided Manipulator <a name="contactaidedfinger"></a> 
-The Contact-Aided Manipulator is composed of three soft fingers actuated by one servomotor each. The aim is to make use of localized self-contacts for better energy consumption and grasping performances. The robot parameterization as well as our results are described in this [article]() (soon to be published). 
+## Design Optimization of the Tripod Finger, a Contact-Aided Manipulator <a name="contactaidedfinger"></a> 
+The [Contact-Aided Manipulator](Models/TripodFinger) is composed of three soft fingers actuated by one servomotor each. The aim is to make use of localized self-contacts for better energy consumption and grasping performances. The robot parameterization as well as our results are described in this [article](https://theses.hal.science/CRISTAL-DEFROST/hal-04482015v1). 
 
 ![Alt text](/images/ContactAidedFinger_Overview.png)
 
@@ -134,7 +134,7 @@ The Contact-Aided Manipulator is composed of three soft fingers actuated by one 
 
 # Known Issues <a name="knownissues"></a> 
 
-During the exploration of design parameters it is possible that no meshes can be created by Gmsh. In fact, it is possible that the call to Gmsh will not automatically terminate. In this case, the whole optimization loop will be stalled, making it necessary to abort and restart or to keep the partial results only. We are currently working on fixing this issue. 
+During the exploration of design parameters, it is possible that no meshes can be created by Gmsh. In fact, it is possible that the call to Gmsh will not automatically terminate. In this case, the whole optimization loop will be stalled, making it necessary to abort and restart or to keep the partial results only. We are currently working on fixing this issue. 
 
 # Citing <a name="citing"></a> 
 If you use the project in your work, please consider citing it with:
