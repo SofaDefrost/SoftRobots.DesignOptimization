@@ -134,7 +134,7 @@ def createScene(rootNode, config):
     model = rootNode.addChild('model')
     model.addObject('EulerImplicitSolver', name='odesolver', firstOrder=0, rayleighMass=0.1,  rayleighStiffness=0.1)
     model.addObject('SparseLDLSolver', name='precond', template = "CompressedRowSparseMatrixd")
-    model.addObject('GenericConstraintCorrection', solverName="precond")
+    model.addObject('GenericConstraintCorrection')
 
     ##################
     ### Load model ###
