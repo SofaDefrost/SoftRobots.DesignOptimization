@@ -25,7 +25,7 @@ def createScene(rootNode):
                 bunny.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=0.3,  youngModulus=18000)
 
                 bunny.addObject('BoxROI', name='boxROI', box=[-15, -7, -15,  15, -3, 15], drawBoxes=True, position="@tetras.rest_position", tetrahedra="@container.tetrahedra")
-                bunny.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12)
+                bunny.addObject('FixedWeakConstraint', indices='@boxROI.indices', stiffness=1e12)
 
                 bunny.addObject('SparseLDLSolver', name='preconditioner')
                 bunny.addObject('LinearSolverConstraintCorrection', solverName='preconditioner')

@@ -169,7 +169,7 @@ def createScene(rootNode, config):
     # Fix base of the Trunk
     trunk.addObject('BoxROI', name='boxROI', box=[[-20*config.mm, -20*config.mm, -config.d_ext-(config.d_in/2)], [20*config.mm, 20*config.mm, 0]], drawBoxes=True)
     #trunk.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
-    trunk.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e10) 
+    trunk.addObject('FixedWeakConstraint', indices='@boxROI.indices', stiffness=1e10)
 
 
     ##################
@@ -334,7 +334,7 @@ def createScene(rootNode, config):
             corridor = simulation.addChild("Corridor_" + str(i))        
             corridor.addObject('MechanicalObject', template="Rigid3", scale="0.001", dx="0.0", dy="0.0", dz="0.0")
             #corridor.addObject("UniformMass", totalMass = 100.0)
-            corridor.addObject('RestShapeSpringsForceField', stiffness=1e10)
+            corridor.addObject('FixedWeakConstraint', stiffness=1e10, fixAll=True)
             
 
             contacts_corridor = corridor.addChild("CollisionModel")

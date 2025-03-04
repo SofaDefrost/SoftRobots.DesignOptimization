@@ -134,7 +134,7 @@ def createScene(rootNode, config):
     model = rootNode.addChild('model')
     model.addObject('EulerImplicitSolver', name='odesolver', firstOrder=0, rayleighMass=0.1,  rayleighStiffness=0.1)
     model.addObject('SparseLDLSolver', name='precond', template = "CompressedRowSparseMatrixd")
-    model.addObject('GenericConstraintCorrection')
+    model.addObject('GenericConstraintCorrection', solverName="precond")
 
     ##################
     ### Load model ###
@@ -159,7 +159,7 @@ def createScene(rootNode, config):
     BoxMargin = 3
     BoxCoords = [-(config.Thickness/2+BoxMargin), -BoxMargin, BoxMargin, config.Thickness/2+BoxMargin,config.Height+2*BoxMargin, -BoxMargin]
     model.addObject('BoxROI', name='boxROI', box=BoxCoords, drawBoxes=True)
-    model.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e10)               
+    model.addObject('FixedWeakConstraint', indices='@boxROI.indices', stiffness=1e10)
     
     FollowingMONode = model.addChild('FollowingMONode')                
     FollowingMONode.addObject("MechanicalObject", name="FollowingMO", template="Vec3d", position=[0.0, 0, -3.0*config.Length], showObject=True, showObjectScale=20, showColor="0 0 1") 

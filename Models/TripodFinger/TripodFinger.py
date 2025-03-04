@@ -419,7 +419,7 @@ class FitnessEvaluationController(BaseFitnessEvaluationController):
 
     def evaluate_torque(self):
         # As the torque is modeled as a Spring, we compute the torque as k * (theta - theta_0)
-        k = self.actuator.ServoMotor.Articulation.RestShapeSpringsForceField.stiffness.value
+        k = self.actuator.ServoMotor.Articulation.FixedWeakConstraint.stiffness.value
         theta_0 = self.actuator.ServoMotor.Articulation.dofs.rest_position.value 
         theta = self.actuator.ServoMotor.Articulation.dofs.position.value
         return k * (theta - theta_0)
